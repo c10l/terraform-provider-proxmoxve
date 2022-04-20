@@ -15,22 +15,23 @@ func Provider() *schema.Provider {
 			"base_url": {
 				Type:        schema.TypeString,
 				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc("PROXMOXVE_TEST_BASE_URL", nil),
+				DefaultFunc: schema.EnvDefaultFunc("PROXMOXVE_BASE_URL", nil),
 			},
 			"token_id": {
 				Type:        schema.TypeString,
 				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc("PROXMOXVE_TEST_TOKEN_ID", nil),
+				DefaultFunc: schema.EnvDefaultFunc("PROXMOXVE_TOKEN_ID", nil),
 			},
 			"secret": {
 				Type:        schema.TypeString,
 				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc("PROXMOXVE_TEST_SECRET", nil),
+				Sensitive:   true,
+				DefaultFunc: schema.EnvDefaultFunc("PROXMOXVE_SECRET", nil),
 			},
 			"tls_insecure": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("PROXMOXVE_TEST_TLS_INSECURE", false),
+				DefaultFunc: schema.EnvDefaultFunc("PROXMOXVE_TLS_INSECURE", false),
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{},
