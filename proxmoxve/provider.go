@@ -51,7 +51,11 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 
 	c, err := pmapi.NewClient(baseURL, tokenID, secret, tlsInsecure)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Failed to create ProxMox VE client.",
+			Detail:   err.Error(),
+		})
 	}
 
 	return c, diags
