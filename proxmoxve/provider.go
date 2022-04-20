@@ -3,7 +3,7 @@ package proxmoxve
 import (
 	"context"
 
-	pmapi "github.com/c10l/proxmoxve-client-go/api2"
+	proxmox "github.com/c10l/proxmoxve-client-go/api2"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -34,7 +34,9 @@ func Provider() *schema.Provider {
 				DefaultFunc: schema.EnvDefaultFunc("PROXMOXVE_TLS_INSECURE", false),
 			},
 		},
-		ResourcesMap: map[string]*schema.Resource{},
+		ResourcesMap: map[string]*schema.Resource{
+			"proxmoxve_pool": resourcePool(),
+		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"proxmoxve_version": dataSourceVersion(),
 		},
@@ -50,7 +52,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 
 	diags := diag.Diagnostics{}
 
-	c, err := pmapi.NewClient(baseURL, tokenID, secret, tlsInsecure)
+	c, err := proxmox.NewClient(baseURL, tokenID, secret, tlsInsecure)
 	if err != nil {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Error,

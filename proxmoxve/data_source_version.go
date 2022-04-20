@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	pmapi "github.com/c10l/proxmoxve-client-go/api2"
+	proxmox "github.com/c10l/proxmoxve-client-go/api2"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -36,7 +36,7 @@ func dataSourceVersion() *schema.Resource {
 func dataSourceVersionRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
-	c := m.(*pmapi.Client)
+	c := m.(*proxmox.Client)
 
 	version, err := c.RetrieveVersion()
 	if err != nil {
