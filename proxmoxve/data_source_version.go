@@ -2,7 +2,10 @@ package proxmoxve
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	pmapi "github.com/c10l/proxmoxve-client-go/api2"
@@ -40,14 +43,43 @@ func dataSourceVersionRead(ctx context.Context, d *schema.ResourceData, m interf
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("release", version.Release); err != nil {
+	v := make(map[string]interface{}, 0)
+	err = json.NewDecoder(version).Decode(&v)
+	if err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("repoid", version.RepoID); err != nil {
-		return diag.FromErr(err)
+
+	vData, ok := v["data"].(map[string]interface{})
+	if !ok {
+		var detail []byte
+		_, err := version.Read(detail)
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Could not get version data",
+			Detail:   strings.Join([]string{string(detail), err.Error()}, "\n"),
+		})
 	}
-	if err := d.Set("version", version.Version); err != nil {
-		return diag.FromErr(err)
+
+	if err := d.Set("release", vData["release"]); err != nil {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Failed to set release",
+			Detail:   fmt.Sprintf("%v", vData),
+		})
+	}
+	if err := d.Set("repoid", vData["repoid"]); err != nil {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Failed to set repoid",
+			Detail:   fmt.Sprintf("%v", vData),
+		})
+	}
+	if err := d.Set("version", vData["version"]); err != nil {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Failed to set version",
+			Detail:   fmt.Sprintf("%v", vData),
+		})
 	}
 
 	// always run
