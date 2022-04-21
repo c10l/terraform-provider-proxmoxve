@@ -3,7 +3,6 @@ package proxmoxve
 import (
 	"context"
 
-	proxmox "github.com/c10l/proxmoxve-client-go/api2"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -15,6 +14,10 @@ type versionDatasourceType struct{}
 func (r versionDatasourceType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		Attributes: map[string]tfsdk.Attribute{
+			"id": {
+				Type:     types.StringType,
+				Computed: true,
+			},
 			"release": {
 				Type:     types.StringType,
 				Computed: true,
@@ -32,14 +35,16 @@ func (r versionDatasourceType) GetSchema(_ context.Context) (tfsdk.Schema, diag.
 }
 
 type versionDatasource struct {
-	client *proxmox.Client
+	provider provider
 }
 
 // NewDataSource -
-func (v versionDatasourceType) NewDataSource(_ context.Context, p tfsdk.Provider) (tfsdk.DataSource, diag.Diagnostics) {
+func (v versionDatasourceType) NewDataSource(ctx context.Context, in tfsdk.Provider) (tfsdk.DataSource, diag.Diagnostics) {
+	provider, diags := convertProviderType(in)
+
 	return versionDatasource{
-		client: p.(*provider).client,
-	}, nil
+		provider: provider,
+	}, diags
 }
 
 // Read -
@@ -52,7 +57,7 @@ func (v versionDatasource) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 		return
 	}
 
-	version, err := v.client.RetrieveVersion()
+	version, err := v.provider.client.RetrieveVersion()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error retrieving version",
@@ -64,6 +69,8 @@ func (v versionDatasource) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 	data.Release = types.String{Value: version.Release}
 	data.RepoID = types.String{Value: version.RepoID}
 	data.Version = types.String{Value: version.Version}
+
+	data.ID = types.String{Value: version.Version}
 
 	diags = resp.State.Set(ctx, &data)
 	resp.Diagnostics.Append(diags...)

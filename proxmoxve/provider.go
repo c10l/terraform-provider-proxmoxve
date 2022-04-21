@@ -2,6 +2,7 @@ package proxmoxve
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strconv"
 
@@ -166,4 +167,33 @@ func (p *provider) GetDataSources(_ context.Context) (map[string]tfsdk.DataSourc
 	return map[string]tfsdk.DataSourceType{
 		"proxmoxve_version": versionDatasourceType{},
 	}, nil
+}
+
+// convertProviderType is a helper function for NewResource and NewDataSource
+// implementations to associate the concrete provider type. Alternatively,
+// this helper can be skipped and the provider type can be directly type
+// asserted (e.g. provider: in.(*provider)), however using this can prevent
+// potential panics.
+func convertProviderType(in tfsdk.Provider) (provider, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	p, ok := in.(*provider)
+
+	if !ok {
+		diags.AddError(
+			"Unexpected Provider Instance Type",
+			fmt.Sprintf("While creating the data source or resource, an unexpected provider type (%T) was received. This is always a bug in the provider code and should be reported to the provider developers.", p),
+		)
+		return provider{}, diags
+	}
+
+	if p == nil {
+		diags.AddError(
+			"Unexpected Provider Instance Type",
+			"While creating the data source or resource, an unexpected empty provider instance was received. This is always a bug in the provider code and should be reported to the provider developers.",
+		)
+		return provider{}, diags
+	}
+
+	return *p, diags
 }
