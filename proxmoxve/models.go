@@ -8,3 +8,8 @@ type Version struct {
 	RepoID  types.String `tfsdk:"repoid"`
 	Version types.String `tfsdk:"version"`
 }
+
+type Pool struct {
+	ID      types.String `tfsdk:"id"`
+	Comment types.String `tfsdk:"comment"`
+}

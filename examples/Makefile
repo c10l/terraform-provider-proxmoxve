@@ -3,8 +3,11 @@
 clean:
 	rm -rf .terraform
 	rm -f .terraform.lock.hcl
+	rm -f terraform.tfplan
+	rm -f terraform.tfstate*
 
-init: clean
+init:
+	rm -f .terraform.lock.hcl
 	terraform init
 
 plan:
@@ -12,3 +15,7 @@ plan:
 
 apply:
 	terraform apply terraform.tfplan
+
+destroy:
+	terraform destroy -auto-approve
+	make clean
