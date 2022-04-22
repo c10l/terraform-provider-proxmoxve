@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 )
 
 type versionDatasourceType struct{}
@@ -50,7 +51,6 @@ func (v versionDatasourceType) NewDataSource(ctx context.Context, in tfsdk.Provi
 // Read -
 func (v versionDatasource) Read(ctx context.Context, req tfsdk.ReadDataSourceRequest, resp *tfsdk.ReadDataSourceResponse) {
 	var data Version
-
 	diags := req.Config.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -59,19 +59,12 @@ func (v versionDatasource) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 
 	version, err := v.provider.client.RetrieveVersion()
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error retrieving version",
-			err.Error(),
-		)
+		resp.Diagnostics.AddError("Error retrieving version", err.Error())
 		return
 	}
 
-	data.Release = types.String{Value: version.Release}
-	data.RepoID = types.String{Value: version.RepoID}
-	data.Version = types.String{Value: version.Version}
-
-	data.ID = types.String{Value: version.Version}
-
-	diags = resp.State.Set(ctx, &data)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, tftypes.NewAttributePath().WithAttributeName("id"), &version.Version)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, tftypes.NewAttributePath().WithAttributeName("version"), &version.Version)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, tftypes.NewAttributePath().WithAttributeName("repoid"), &version.RepoID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, tftypes.NewAttributePath().WithAttributeName("release"), &version.Release)...)
 }

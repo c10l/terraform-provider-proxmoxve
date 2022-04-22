@@ -23,4 +23,4 @@ func TestAccDataSourceVersion(t *testing.T) {
 	})
 }
 
-const testAccDataSourceVersionConfig = `data "proxmoxve_version" "test" {}`
+const testAccDataSourceVersionConfig = `data proxmoxve_version test {}`
