@@ -15,8 +15,9 @@ func TestAccPoolDatasource(t *testing.T) {
 			{
 				Config: testAccPoolDatasourceConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.proxmoxve_pool.test", "id", "test"),
+					resource.TestCheckResourceAttr("data.proxmoxve_pool.test", "pool_id", "test"),
 					resource.TestCheckResourceAttr("data.proxmoxve_pool.test", "comment", "data source read!"),
+					resource.TestCheckNoResourceAttr("data.proxmoxve_pool.test", "storage_members"),
 				),
 			},
 		},
@@ -25,11 +26,11 @@ func TestAccPoolDatasource(t *testing.T) {
 
 const testAccPoolDatasourceConfig = `
 resource proxmoxve_pool test {
-	id      = "test"
+	pool_id = "test"
 	comment = "data source read!"
 }
 
 data proxmoxve_pool test {
-	id         = "test"
+	pool_id    = "test"
 	depends_on = [proxmoxve_pool.test]
 }`

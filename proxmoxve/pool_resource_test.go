@@ -16,7 +16,7 @@ func TestAccPoolResource(t *testing.T) {
 			{
 				Config: testAccPoolResourceConfig("created"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("proxmoxve_pool.test", "id", "test"),
+					resource.TestCheckResourceAttr("proxmoxve_pool.test", "pool_id", "test"),
 					resource.TestCheckResourceAttr("proxmoxve_pool.test", "comment", "created"),
 				),
 			},
@@ -33,7 +33,7 @@ func TestAccPoolResource(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("proxmoxve_pool.test", "id", "test"),
+					resource.TestCheckResourceAttr("proxmoxve_pool.test", "pool_id", "test"),
 					resource.TestCheckResourceAttr("proxmoxve_pool.test", "comment", "updated"),
 				),
 			},
@@ -44,7 +44,7 @@ func TestAccPoolResource(t *testing.T) {
 func testAccPoolResourceConfig(comment string) string {
 	return fmt.Sprintf(`
 resource proxmoxve_pool test {
-	id      = "test"
+	pool_id = "test"
 	comment = "%s"
 }`, comment)
 }
