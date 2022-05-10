@@ -1,5 +1,7 @@
 .PHONY: clean init plan apply
 
+default: init plan apply
+
 clean:
 	rm -rf .terraform
 	rm -f .terraform.lock.hcl
