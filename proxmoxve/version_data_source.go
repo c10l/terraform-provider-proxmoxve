@@ -57,7 +57,7 @@ func (v versionDatasource) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 		return
 	}
 
-	version, err := v.provider.client.RetrieveVersion()
+	version, err := v.provider.client.GetVersion()
 	if err != nil {
 		resp.Diagnostics.AddError("Error retrieving version", err.Error())
 		return
