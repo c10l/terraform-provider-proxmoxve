@@ -3,6 +3,8 @@ package proxmoxve
 import (
 	"context"
 
+	version "github.com/c10l/proxmoxve-client-go/api/version"
+
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -57,7 +59,7 @@ func (v versionDatasource) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 		return
 	}
 
-	version, err := v.provider.client.GetVersion()
+	version, err := version.GetRequest{Client: v.provider.client}.Do()
 	if err != nil {
 		resp.Diagnostics.AddError("Error retrieving version", err.Error())
 		return
