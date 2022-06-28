@@ -11,21 +11,14 @@ provider "proxmoxve" {}
 
 data "proxmoxve_version" "current" {}
 
-resource "proxmoxve_pool" "checkmeout" {
-  pool_id = "checkychecky"
-  comment = data.proxmoxve_version.current.version
-}
-
-resource "proxmoxve_pool" "fromtheother" {
-  pool_id = "theother"
-  comment = "updateme ${proxmoxve_pool.checkmeout.pool_id}"
-}
-
-resource "proxmoxve_pool" "foofoofaafaa" {
-  pool_id = "foofoofaafaa"
-  comment = "something else really"
+data "proxmoxve_storage" "local" {
+  storage = "local"
 }
 
 output "version" {
   value = data.proxmoxve_version.current
+}
+
+output "storage" {
+  value = data.proxmoxve_storage.local
 }
