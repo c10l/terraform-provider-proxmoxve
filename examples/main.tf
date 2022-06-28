@@ -15,6 +15,11 @@ data "proxmoxve_storage" "local" {
   storage = "local"
 }
 
+resource "proxmoxve_storage_dir" "test" {
+  storage = "test"
+  path    = "/test"
+}
+
 output "version" {
   value = data.proxmoxve_version.current
 }
