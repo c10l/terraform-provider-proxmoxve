@@ -15,8 +15,7 @@ import (
 // Ensure provider defined types fully satisfy framework interfaces
 var _ tfsdk.ResourceType = storageDirResourceType{}
 var _ tfsdk.Resource = storageDirResource{}
-
-// var _ tfsdk.ResourceWithImportState = storageDirResource{}
+var _ tfsdk.ResourceWithImportState = storageDirResource{}
 
 type storageDirResourceType struct{}
 
@@ -200,7 +199,7 @@ func (r storageDirResource) Delete(ctx context.Context, req tfsdk.DeleteResource
 }
 
 func (r storageDirResource) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
-	tfsdk.ResourceImportStatePassthroughID(ctx, tftypes.NewAttributePath().WithAttributeName("id"), req, resp)
+	tfsdk.ResourceImportStatePassthroughID(ctx, tftypes.NewAttributePath().WithAttributeName("storage"), req, resp)
 }
 
 func (r storageDirResource) convertAPIGetResponseToTerraform(ctx context.Context, apiData storage.ItemGetResponse, tfData *storageDirResourceData) diag.Diagnostics {

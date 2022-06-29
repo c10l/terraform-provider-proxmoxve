@@ -28,17 +28,12 @@ func TestAccStorageDirResource(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr("proxmoxve_storage_dir.test", "nodes.*", "foobar"),
 				),
 			},
-			// // ImportState testing
-			// {
-			// 	ResourceName:      "scaffolding_example.test",
-			// 	ImportState:       true,
-			// 	ImportStateVerify: true,
-			// 	// This is not normally necessary, but is here because this
-			// 	// example code does not have an actual upstream service.
-			// 	// Once the Read method is able to refresh information from
-			// 	// the upstream service, this can be removed.
-			// 	ImportStateVerifyIgnore: []string{"configurable_attribute"},
-			// },
+			// ImportState testing
+			{
+				ResourceName:      "proxmoxve_storage_dir.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 			// // Update and Read testing
 			// {
 			// 	Config: testAccStorageDirResourceConfig("two"),
