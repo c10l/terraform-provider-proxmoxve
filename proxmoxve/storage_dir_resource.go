@@ -39,14 +39,16 @@ func (t storageDirResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, di
 				Optional: true,
 				Computed: true,
 			},
-			// "nodes": {
-			// 	Type:     types.StringType,
-			// 	Optional: true,
-			// },
-			// "disable": {
-			// 	Type:     types.BoolType,
-			// 	Optional: true,
-			// },
+			"nodes": {
+				Type:     types.SetType{ElemType: types.StringType},
+				Optional: true,
+				Computed: true,
+			},
+			"disable": {
+				Type:     types.BoolType,
+				Optional: true,
+				Computed: true,
+			},
 			// "shared": {
 			// 	Type:     types.BoolType,
 			// 	Optional: true,
@@ -84,9 +86,9 @@ type storageDirResourceData struct {
 	Path    types.String `tfsdk:"path"`
 
 	// Optional attributes
-	Content types.Set `tfsdk:"content"`
-	// Nodes         types.String `tfsdk:"nodes"`
-	// Disable       types.Bool   `tfsdk:"disable"`
+	Content types.Set  `tfsdk:"content"`
+	Nodes   types.Set  `tfsdk:"nodes"`
+	Disable types.Bool `tfsdk:"disable"`
 	// Shared        types.Bool   `tfsdk:"shared"`
 	// Preallocation types.String `tfsdk:"preallocation"`
 
@@ -109,20 +111,21 @@ func (r storageDirResource) Create(ctx context.Context, req tfsdk.CreateResource
 	}
 
 	postReq := storage.PostRequest{Client: r.provider.client, Storage: data.Storage.Value, StorageType: "dir", Path: &data.Path.Value}
-	for _, v := range data.Content.Elems {
-		value, err := v.ToTerraformValue(ctx)
-		if err != nil {
-			diagError := diag.NewAttributeErrorDiagnostic(tftypes.NewAttributePath().WithAttributeName("content"), "error converting content", err.Error())
-			resp.Diagnostics.AddAttributeError(diagError.Path(), diagError.Summary(), diagError.Detail())
+	if !data.Content.Null {
+		if postReq.Content == nil {
+			postReq.Content = &[]string{}
 		}
-		*postReq.Content = append(*postReq.Content, storage.Content(value.String()))
+		resp.Diagnostics.Append(data.Content.ElementsAs(ctx, postReq.Content, false)...)
 	}
-	// if !data.Nodes.Null {
-	// 	postReq.Nodes = &data.Nodes.Value
-	// }
-	// if !data.Disable.Null {
-	// 	postReq.Disable = &data.Disable.Value
-	// }
+	if !data.Nodes.Null {
+		if postReq.Nodes == nil {
+			postReq.Nodes = &[]string{}
+		}
+		resp.Diagnostics.Append(data.Nodes.ElementsAs(ctx, postReq.Nodes, false)...)
+	}
+	if !data.Disable.Null {
+		postReq.Disable = &data.Disable.Value
+	}
 	// if !data.Shared.Null {
 	// 	postReq.Shared = &data.Shared.Value
 	// }
@@ -136,11 +139,12 @@ func (r storageDirResource) Create(ctx context.Context, req tfsdk.CreateResource
 		return
 	}
 
-	err = r.get(&data)
+	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Do()
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading storage_dir", err.Error())
 		return
 	}
+	r.convertAPIGetResponseToTerraform(*storage, &data)
 
 	tflog.Trace(ctx, "created storage_dir")
 
@@ -156,40 +160,16 @@ func (r storageDirResource) Read(ctx context.Context, req tfsdk.ReadResourceRequ
 		return
 	}
 
-	err := r.get(&data)
+	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Do()
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading storage_dir", err.Error())
 		return
 	}
 
+	r.convertAPIGetResponseToTerraform(*storage, &data)
+
 	diags = resp.State.Set(ctx, &data)
 	resp.Diagnostics.Append(diags...)
-}
-
-func (r storageDirResource) get(data *storageDirResourceData) error {
-	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Do()
-	if err != nil {
-		return err
-	}
-
-	data.Content = types.Set{ElemType: types.StringType}
-	for _, v := range storage.Content {
-		value := types.String{Value: string(v)}
-		data.Content.Elems = append(data.Content.Elems, value)
-	}
-
-	data.Id = types.String{Value: storage.Storage}
-	data.Storage = types.String{Value: storage.Storage}
-	data.Path = types.String{Value: storage.Path}
-	// data.Digest = types.String{Value: storage.Digest}
-	// data.PruneBackups = types.String{Value: storage.PruneBackups}
-	// data.Shared = types.Bool{Value: storage.Shared}
-	// data.Type = "dir"
-
-	// data.Nodes = types.String{Value: storage.Nodes}
-	// data.Disable = types.Bool{Value: storage.Disable}
-	// data.Preallocation = types.String{Value: string(storage.Preallocation)}
-	return nil
 }
 
 func (r storageDirResource) Update(ctx context.Context, req tfsdk.UpdateResourceRequest, resp *tfsdk.UpdateResourceResponse) {
@@ -213,4 +193,28 @@ func (r storageDirResource) Delete(ctx context.Context, req tfsdk.DeleteResource
 
 func (r storageDirResource) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
 	tfsdk.ResourceImportStatePassthroughID(ctx, tftypes.NewAttributePath().WithAttributeName("id"), req, resp)
+}
+
+func (r storageDirResource) convertAPIGetResponseToTerraform(apiData storage.ItemGetResponse, tfData *storageDirResourceData) {
+	tfData.Content = types.Set{ElemType: types.StringType}
+	for _, v := range apiData.Content {
+		value := types.String{Value: string(v)}
+		tfData.Content.Elems = append(tfData.Content.Elems, value)
+	}
+	tfData.Nodes = types.Set{ElemType: types.StringType}
+	for _, v := range apiData.Nodes {
+		value := types.String{Value: string(v)}
+		tfData.Nodes.Elems = append(tfData.Nodes.Elems, value)
+	}
+
+	tfData.Id = types.String{Value: apiData.Storage}
+	tfData.Storage = types.String{Value: apiData.Storage}
+	tfData.Path = types.String{Value: apiData.Path}
+	// tfData.Digest = types.String{Value: apiData.Digest}
+	// tfData.PruneBackups = types.String{Value: apiData.PruneBackups}
+	// tfData.Shared = types.Bool{Value: apiData.Shared}
+	// tfData.Type = "dir"
+
+	tfData.Disable = types.Bool{Value: apiData.Disable}
+	// tfData.Preallocation = types.String{Value: string(apiData.Preallocation)}
 }

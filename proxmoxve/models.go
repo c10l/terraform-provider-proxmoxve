@@ -1,7 +1,6 @@
 package proxmoxve
 
 import (
-	"github.com/c10l/proxmoxve-client-go/api/storage"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -13,12 +12,12 @@ type Version struct {
 }
 
 type StorageDir struct {
-	Storage       types.String          `tfsdk:"id"`
-	Content       storage.ContentList   `tfsdk:"content"`
-	Digest        types.String          `tfsdk:"digest,omitempty"`
-	Path          types.String          `tfsdk:"path"`
-	Type          storage.Type          `tfsdk:"type"`
-	Nodes         []types.String        `tfsdk:"nodes"`
-	Enabled       types.Bool            `tfsdk:"enabled"`
-	PreAllocation storage.Preallocation `tfsdk:"preallocation"`
+	Storage       types.String `tfsdk:"id"`
+	Content       types.Set    `tfsdk:"content"`
+	Digest        types.String `tfsdk:"digest,omitempty"`
+	Path          types.String `tfsdk:"path"`
+	Type          types.String `tfsdk:"type"`
+	Nodes         types.Set    `tfsdk:"nodes"`
+	Enabled       types.Bool   `tfsdk:"enabled"`
+	PreAllocation types.Bool   `tfsdk:"preallocation"`
 }

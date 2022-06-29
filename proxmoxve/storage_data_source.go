@@ -52,7 +52,7 @@ func (t storageDatasourceType) GetSchema(ctx context.Context) (tfsdk.Schema, dia
 				Required: true,
 			},
 			"nodes": {
-				Type:     types.StringType,
+				Type:     types.SetType{ElemType: types.StringType},
 				Computed: true,
 			},
 			"enabled": {
@@ -84,7 +84,7 @@ type storageDatasourceData struct {
 	PruneBackups  types.String `tfsdk:"prune_backups"`
 	Shared        types.Bool   `tfsdk:"shared"`
 	Storage       types.String `tfsdk:"storage"`
-	Nodes         types.String `tfsdk:"nodes"`
+	Nodes         types.Set    `tfsdk:"nodes"`
 	Enabled       types.Bool   `tfsdk:"enabled"`
 	Preallocation types.String `tfsdk:"preallocation"`
 }
@@ -109,8 +109,13 @@ func (d storageDatasource) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 
 	data.Content = types.Set{ElemType: types.StringType}
 	for _, v := range storage.Content {
-		value := types.String{Value: string(v)}
+		value := types.String{Value: v}
 		data.Content.Elems = append(data.Content.Elems, value)
+	}
+	data.Nodes = types.Set{ElemType: types.StringType}
+	for _, v := range storage.Nodes {
+		value := types.String{Value: v}
+		data.Content.Elems = append(data.Nodes.Elems, value)
 	}
 
 	data.Id = types.String{Value: storage.Storage}
@@ -121,9 +126,8 @@ func (d storageDatasource) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 	data.Shared = types.Bool{Value: storage.Shared}
 	data.Type = types.String{Value: string(storage.Type)}
 
-	data.Nodes = types.String{Value: storage.Nodes}
 	data.Enabled = types.Bool{Value: !storage.Disable}
-	data.Preallocation = types.String{Value: string(storage.Preallocation)}
+	data.Preallocation = types.String{Value: storage.Preallocation}
 
 	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)

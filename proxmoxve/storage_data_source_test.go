@@ -21,7 +21,7 @@ func TestAccDataSourceStorage(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.proxmoxve_storage.test", "digest"),
 					resource.TestCheckResourceAttr("data.proxmoxve_storage.test", "path", "/var/lib/vz"),
 					resource.TestCheckResourceAttr("data.proxmoxve_storage.test", "shared", "false"),
-					resource.TestCheckResourceAttr("data.proxmoxve_storage.test", "nodes", ""),
+					resource.TestCheckResourceAttr("data.proxmoxve_storage.test", "nodes.#", "0"),
 					resource.TestCheckResourceAttr("data.proxmoxve_storage.test", "enabled", "true"),
 					resource.TestCheckResourceAttr("data.proxmoxve_storage.test", "preallocation", ""),
 					resource.TestCheckResourceAttr("data.proxmoxve_storage.test", "prune_backups", "keep-all=1"),

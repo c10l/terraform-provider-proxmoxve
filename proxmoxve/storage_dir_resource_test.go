@@ -18,9 +18,11 @@ func TestAccStorageDirResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("proxmoxve_storage_dir.test", "id", "one"),
 					resource.TestCheckResourceAttr("proxmoxve_storage_dir.test", "path", "/foo/bar"),
+					resource.TestCheckResourceAttr("proxmoxve_storage_dir.test", "disable", "false"),
+					// resource.TestCheckResourceAttr("proxmoxve_storage_dir.test", "type", "dir"),
 					resource.TestCheckTypeSetElemAttr("proxmoxve_storage_dir.test", "content.*", "images"),
 					resource.TestCheckTypeSetElemAttr("proxmoxve_storage_dir.test", "content.*", "rootdir"),
-					// resource.TestCheckResourceAttr("proxmoxve_storage_dir.test", "type", "dir"),
+					resource.TestCheckTypeSetElemAttr("proxmoxve_storage_dir.test", "nodes.*", "foobar"),
 				),
 			},
 			// // ImportState testing
@@ -51,6 +53,7 @@ func testAccStorageDirResourceConfig(storage, path string) string {
 		resource "proxmoxve_storage_dir" "test" {
 			storage = "%[1]s"
 			path    = "%[2]s"
+			nodes   = ["foobar"]
 		}
 		`, storage, path)
 }
