@@ -3,6 +3,7 @@ package proxmoxve
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/c10l/proxmoxve-client-go/api/storage"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -162,7 +163,8 @@ func (r storageDirResource) Read(ctx context.Context, req tfsdk.ReadResourceRequ
 
 	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Do()
 	if err != nil {
-		if err.Error() == fmt.Sprintf("500 storage '%s' does not exist", data.Storage.Value) {
+		// If resource has been deleted outside of Terraform, we remove it from the plan state so it can be re-created.
+		if strings.Contains(err.Error(), fmt.Sprintf("500 storage '%s' does not exist", data.Storage.Value)) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
