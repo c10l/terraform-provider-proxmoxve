@@ -2,7 +2,7 @@ terraform {
   required_providers {
     proxmoxve = {
       version = "0.0.1"
-      source  = "c10l.cc/local/proxmoxve"
+      source  = "github.com/c10l/proxmoxve"
     }
   }
 }

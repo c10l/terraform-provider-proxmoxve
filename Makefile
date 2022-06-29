@@ -1,6 +1,6 @@
 TEST?=$$(go list ./... | grep -v 'vendor')
-HOSTNAME=c10l.cc
-NAMESPACE=local
+HOSTNAME=github.com
+NAMESPACE=c10l
 NAME=proxmoxve
 BINARY=terraform-provider-${NAME}
 VERSION=0.0.1

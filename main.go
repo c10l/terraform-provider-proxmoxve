@@ -16,7 +16,7 @@ func main() {
 	flag.Parse()
 
 	opts := providerserver.ServeOpts{
-		Address: "c10l.cc/local/proxmoxve",
+		Address: "github.com/c10l/proxmoxve",
 		Debug:   debug,
 	}
 	err := providerserver.Serve(context.Background(), proxmoxve.New, opts)
