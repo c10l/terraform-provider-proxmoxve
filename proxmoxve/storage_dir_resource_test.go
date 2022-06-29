@@ -19,6 +19,7 @@ func TestAccStorageDirResource(t *testing.T) {
 					resource.TestCheckResourceAttr("proxmoxve_storage_dir.test", "id", "one"),
 					resource.TestCheckResourceAttr("proxmoxve_storage_dir.test", "path", "/foo/bar"),
 					resource.TestCheckResourceAttr("proxmoxve_storage_dir.test", "disable", "false"),
+					resource.TestCheckResourceAttr("proxmoxve_storage_dir.test", "shared", "false"),
 					// resource.TestCheckResourceAttr("proxmoxve_storage_dir.test", "type", "dir"),
 					resource.TestCheckTypeSetElemAttr("proxmoxve_storage_dir.test", "content.*", "images"),
 					resource.TestCheckTypeSetElemAttr("proxmoxve_storage_dir.test", "content.*", "rootdir"),

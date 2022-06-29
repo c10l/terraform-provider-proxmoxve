@@ -7,12 +7,7 @@ terraform {
   }
 }
 
-provider "proxmoxve" {
-  base_url     = "https://10.100.10.251:8006"
-  token_id     = "root@pam!tests"
-  secret       = "c9d6c337-d14f-469f-8487-1a69b9b3118d"
-  tls_insecure = true
-}
+provider "proxmoxve" {}
 
 data "proxmoxve_version" "current" {}
 

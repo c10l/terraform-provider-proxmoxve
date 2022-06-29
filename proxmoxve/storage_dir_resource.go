@@ -2,6 +2,7 @@ package proxmoxve
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/c10l/proxmoxve-client-go/api/storage"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -49,10 +50,11 @@ func (t storageDirResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, di
 				Optional: true,
 				Computed: true,
 			},
-			// "shared": {
-			// 	Type:     types.BoolType,
-			// 	Optional: true,
-			// },
+			"shared": {
+				Type:     types.BoolType,
+				Optional: true,
+				Computed: true,
+			},
 			// "preallocation": {
 			// 	Type:     types.StringType,
 			// 	Optional: true,
@@ -89,7 +91,7 @@ type storageDirResourceData struct {
 	Content types.Set  `tfsdk:"content"`
 	Nodes   types.Set  `tfsdk:"nodes"`
 	Disable types.Bool `tfsdk:"disable"`
-	// Shared        types.Bool   `tfsdk:"shared"`
+	Shared  types.Bool `tfsdk:"shared"`
 	// Preallocation types.String `tfsdk:"preallocation"`
 
 	// // Computed attributes
@@ -126,9 +128,9 @@ func (r storageDirResource) Create(ctx context.Context, req tfsdk.CreateResource
 	if !data.Disable.Null {
 		postReq.Disable = &data.Disable.Value
 	}
-	// if !data.Shared.Null {
-	// 	postReq.Shared = &data.Shared.Value
-	// }
+	if !data.Shared.Null {
+		postReq.Shared = &data.Shared.Value
+	}
 	// if !data.Preallocation.Null {
 	// 	v := storage.Preallocation(data.Preallocation.Value)
 	// 	postReq.Preallocation = &v
@@ -144,7 +146,11 @@ func (r storageDirResource) Create(ctx context.Context, req tfsdk.CreateResource
 		resp.Diagnostics.AddError("Error reading storage_dir", err.Error())
 		return
 	}
-	r.convertAPIGetResponseToTerraform(*storage, &data)
+
+	resp.Diagnostics.Append(r.convertAPIGetResponseToTerraform(ctx, *storage, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	tflog.Trace(ctx, "created storage_dir")
 
@@ -162,11 +168,18 @@ func (r storageDirResource) Read(ctx context.Context, req tfsdk.ReadResourceRequ
 
 	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Do()
 	if err != nil {
+		if err.Error() == fmt.Sprintf("500 storage '%s' does not exist", data.Storage.Value) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Error reading storage_dir", err.Error())
 		return
 	}
 
-	r.convertAPIGetResponseToTerraform(*storage, &data)
+	resp.Diagnostics.Append(r.convertAPIGetResponseToTerraform(ctx, *storage, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	diags = resp.State.Set(ctx, &data)
 	resp.Diagnostics.Append(diags...)
@@ -195,26 +208,21 @@ func (r storageDirResource) ImportState(ctx context.Context, req tfsdk.ImportRes
 	tfsdk.ResourceImportStatePassthroughID(ctx, tftypes.NewAttributePath().WithAttributeName("id"), req, resp)
 }
 
-func (r storageDirResource) convertAPIGetResponseToTerraform(apiData storage.ItemGetResponse, tfData *storageDirResourceData) {
-	tfData.Content = types.Set{ElemType: types.StringType}
-	for _, v := range apiData.Content {
-		value := types.String{Value: string(v)}
-		tfData.Content.Elems = append(tfData.Content.Elems, value)
-	}
-	tfData.Nodes = types.Set{ElemType: types.StringType}
-	for _, v := range apiData.Nodes {
-		value := types.String{Value: string(v)}
-		tfData.Nodes.Elems = append(tfData.Nodes.Elems, value)
-	}
+func (r storageDirResource) convertAPIGetResponseToTerraform(ctx context.Context, apiData storage.ItemGetResponse, tfData *storageDirResourceData) diag.Diagnostics {
+	var diags diag.Diagnostics
+	diags = append(diags, tfsdk.ValueFrom(ctx, apiData.Content, types.SetType{ElemType: types.StringType}, &tfData.Content)...)
+	diags = append(diags, tfsdk.ValueFrom(ctx, apiData.Nodes, types.SetType{ElemType: types.StringType}, &tfData.Nodes)...)
 
 	tfData.Id = types.String{Value: apiData.Storage}
 	tfData.Storage = types.String{Value: apiData.Storage}
 	tfData.Path = types.String{Value: apiData.Path}
 	// tfData.Digest = types.String{Value: apiData.Digest}
 	// tfData.PruneBackups = types.String{Value: apiData.PruneBackups}
-	// tfData.Shared = types.Bool{Value: apiData.Shared}
+	tfData.Shared = types.Bool{Value: apiData.Shared}
 	// tfData.Type = "dir"
 
 	tfData.Disable = types.Bool{Value: apiData.Disable}
 	// tfData.Preallocation = types.String{Value: string(apiData.Preallocation)}
+
+	return diags
 }
