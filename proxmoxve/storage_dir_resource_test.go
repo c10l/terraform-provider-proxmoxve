@@ -15,7 +15,7 @@ func TestAccStorageDirResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccStorageDirResourceConfig([]string{"foobar"}),
+				Config: testAccStorageDirResourceConfig([]string{"foobar"}, false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("proxmoxve_storage_dir.test", "id", "testacc_storage"),
 					resource.TestCheckResourceAttr("proxmoxve_storage_dir.test", "path", "/foo/bar"),
@@ -37,11 +37,12 @@ func TestAccStorageDirResource(t *testing.T) {
 			},
 			// Update and Read testing
 			{
-				Config: testAccStorageDirResourceConfig([]string{"foo", "baz", "quux"}),
+				Config: testAccStorageDirResourceConfig([]string{"foo", "baz", "quux"}, true),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckTypeSetElemAttr("proxmoxve_storage_dir.test", "nodes.*", "foo"),
 					resource.TestCheckTypeSetElemAttr("proxmoxve_storage_dir.test", "nodes.*", "baz"),
 					resource.TestCheckTypeSetElemAttr("proxmoxve_storage_dir.test", "nodes.*", "quux"),
+					resource.TestCheckResourceAttr("proxmoxve_storage_dir.test", "shared", "true"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -49,12 +50,13 @@ func TestAccStorageDirResource(t *testing.T) {
 	})
 }
 
-func testAccStorageDirResourceConfig(nodes []string) string {
+func testAccStorageDirResourceConfig(nodes []string, shared bool) string {
 	return fmt.Sprintf(`
 		resource "proxmoxve_storage_dir" "test" {
 			storage = "testacc_storage"
 			path    = "/foo/bar"
 			nodes   = ["%s"]
+			shared  = %t
 		}
-		`, strings.Join(nodes, `","`))
+		`, strings.Join(nodes, `","`), shared)
 }
