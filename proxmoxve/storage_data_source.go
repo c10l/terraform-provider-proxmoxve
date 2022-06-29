@@ -31,10 +31,6 @@ func (t storageDatasourceType) GetSchema(ctx context.Context) (tfsdk.Schema, dia
 				Type:     types.SetType{ElemType: types.StringType},
 				Computed: true,
 			},
-			"digest": {
-				Type:     types.StringType,
-				Computed: true,
-			},
 			"path": {
 				Type:     types.StringType,
 				Computed: true,
@@ -79,7 +75,6 @@ type storageDatasourceData struct {
 	Id            types.String `tfsdk:"id"`
 	Type          types.String `tfsdk:"type"`
 	Content       types.Set    `tfsdk:"content"`
-	Digest        types.String `tfsdk:"digest"`
 	Path          types.String `tfsdk:"path"`
 	PruneBackups  types.String `tfsdk:"prune_backups"`
 	Shared        types.Bool   `tfsdk:"shared"`
@@ -120,7 +115,6 @@ func (d storageDatasource) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 
 	data.Id = types.String{Value: storage.Storage}
 	data.Storage = types.String{Value: storage.Storage}
-	data.Digest = types.String{Value: storage.Digest}
 	data.Path = types.String{Value: storage.Path}
 	data.PruneBackups = types.String{Value: storage.PruneBackups}
 	data.Shared = types.Bool{Value: storage.Shared}

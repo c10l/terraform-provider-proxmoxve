@@ -14,7 +14,6 @@ type Version struct {
 type StorageDir struct {
 	Storage       types.String `tfsdk:"id"`
 	Content       types.Set    `tfsdk:"content"`
-	Digest        types.String `tfsdk:"digest,omitempty"`
 	Path          types.String `tfsdk:"path"`
 	Type          types.String `tfsdk:"type"`
 	Nodes         types.Set    `tfsdk:"nodes"`
