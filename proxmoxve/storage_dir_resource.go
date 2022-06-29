@@ -55,22 +55,19 @@ func (t storageDirResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, di
 				Optional: true,
 				Computed: true,
 			},
-			// "preallocation": {
-			// 	Type:     types.StringType,
-			// 	Optional: true,
-			// },
-			// "type": {
-			// 	Type:     types.StringType,
-			// 	Computed: true,
-			// },
-			// "digest": {
-			// 	Type:     types.StringType,
-			// 	Computed: true,
-			// },
-			// "prune_backups": {
-			// 	Type:     types.BoolType,
-			// 	Computed: true,
-			// },
+			"preallocation": {
+				Type:     types.StringType,
+				Optional: true,
+				Computed: true,
+			},
+			"type": {
+				Type:     types.StringType,
+				Computed: true,
+			},
+			"prune_backups": {
+				Type:     types.StringType,
+				Computed: true,
+			},
 		},
 	}, nil
 }
@@ -88,16 +85,15 @@ type storageDirResourceData struct {
 	Path    types.String `tfsdk:"path"`
 
 	// Optional attributes
-	Content types.Set  `tfsdk:"content"`
-	Nodes   types.Set  `tfsdk:"nodes"`
-	Disable types.Bool `tfsdk:"disable"`
-	Shared  types.Bool `tfsdk:"shared"`
-	// Preallocation types.String `tfsdk:"preallocation"`
+	Content       types.Set    `tfsdk:"content"`
+	Nodes         types.Set    `tfsdk:"nodes"`
+	Disable       types.Bool   `tfsdk:"disable"`
+	Shared        types.Bool   `tfsdk:"shared"`
+	Preallocation types.String `tfsdk:"preallocation"`
 
-	// // Computed attributes
-	// Type         storage.Type `tfsdk:"type"`
-	// Digest       types.String `tfsdk:"digest"`
-	// PruneBackups types.String `tfsdk:"prune_backups"`
+	// Computed attributes
+	Type         types.String `tfsdk:"type"`
+	PruneBackups types.String `tfsdk:"prune_backups"`
 }
 
 type storageDirResource struct {
@@ -131,10 +127,9 @@ func (r storageDirResource) Create(ctx context.Context, req tfsdk.CreateResource
 	if !data.Shared.Null {
 		postReq.Shared = &data.Shared.Value
 	}
-	// if !data.Preallocation.Null {
-	// 	v := storage.Preallocation(data.Preallocation.Value)
-	// 	postReq.Preallocation = &v
-	// }
+	if !data.Preallocation.Null {
+		postReq.Preallocation = &data.Preallocation.Value
+	}
 	_, err := postReq.Do()
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating storage_dir", err.Error())
@@ -216,13 +211,12 @@ func (r storageDirResource) convertAPIGetResponseToTerraform(ctx context.Context
 	tfData.Id = types.String{Value: apiData.Storage}
 	tfData.Storage = types.String{Value: apiData.Storage}
 	tfData.Path = types.String{Value: apiData.Path}
-	// tfData.Digest = types.String{Value: apiData.Digest}
-	// tfData.PruneBackups = types.String{Value: apiData.PruneBackups}
+	tfData.PruneBackups = types.String{Value: apiData.PruneBackups}
 	tfData.Shared = types.Bool{Value: apiData.Shared}
-	// tfData.Type = "dir"
+	tfData.Type = types.String{Value: apiData.Type}
 
 	tfData.Disable = types.Bool{Value: apiData.Disable}
-	// tfData.Preallocation = types.String{Value: string(apiData.Preallocation)}
+	tfData.Preallocation = types.String{Value: apiData.Preallocation}
 
 	return diags
 }
