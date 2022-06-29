@@ -180,6 +180,56 @@ func (r storageDirResource) Read(ctx context.Context, req tfsdk.ReadResourceRequ
 }
 
 func (r storageDirResource) Update(ctx context.Context, req tfsdk.UpdateResourceRequest, resp *tfsdk.UpdateResourceResponse) {
+	var data storageDirResourceData
+	diags := req.Config.Get(ctx, &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	putReq := storage.ItemPutRequest{Client: r.provider.client, Storage: data.Storage.Value}
+	if !data.Content.Null {
+		if putReq.Content == nil {
+			putReq.Content = &[]string{}
+		}
+		resp.Diagnostics.Append(data.Content.ElementsAs(ctx, putReq.Content, false)...)
+	}
+	if !data.Nodes.Null {
+		if putReq.Nodes == nil {
+			putReq.Nodes = &[]string{}
+		}
+		resp.Diagnostics.Append(data.Nodes.ElementsAs(ctx, putReq.Nodes, false)...)
+	}
+	if !data.Disable.Null {
+		putReq.Disable = &data.Disable.Value
+	}
+	if !data.Shared.Null {
+		putReq.Shared = &data.Shared.Value
+	}
+	if !data.Preallocation.Null {
+		putReq.Preallocation = &data.Preallocation.Value
+	}
+	_, err := putReq.Do()
+	if err != nil {
+		resp.Diagnostics.AddError("Error creating storage_dir", err.Error())
+		return
+	}
+
+	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Do()
+	if err != nil {
+		resp.Diagnostics.AddError("Error reading storage_dir", err.Error())
+		return
+	}
+
+	resp.Diagnostics.Append(r.convertAPIGetResponseToTerraform(ctx, *storage, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	tflog.Trace(ctx, "updated storage_dir")
+
+	diags = resp.State.Set(ctx, &data)
+	resp.Diagnostics.Append(diags...)
 }
 
 func (r storageDirResource) Delete(ctx context.Context, req tfsdk.DeleteResourceRequest, resp *tfsdk.DeleteResourceResponse) {

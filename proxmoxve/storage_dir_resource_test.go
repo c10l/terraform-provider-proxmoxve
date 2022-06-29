@@ -2,6 +2,7 @@ package proxmoxve
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -14,9 +15,9 @@ func TestAccStorageDirResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccStorageDirResourceConfig("one", "/foo/bar"),
+				Config: testAccStorageDirResourceConfig([]string{"foobar"}),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("proxmoxve_storage_dir.test", "id", "one"),
+					resource.TestCheckResourceAttr("proxmoxve_storage_dir.test", "id", "testacc_storage"),
 					resource.TestCheckResourceAttr("proxmoxve_storage_dir.test", "path", "/foo/bar"),
 					resource.TestCheckResourceAttr("proxmoxve_storage_dir.test", "disable", "false"),
 					resource.TestCheckResourceAttr("proxmoxve_storage_dir.test", "shared", "false"),
@@ -34,24 +35,26 @@ func TestAccStorageDirResource(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
-			// // Update and Read testing
-			// {
-			// 	Config: testAccStorageDirResourceConfig("two"),
-			// 	Check: resource.ComposeAggregateTestCheckFunc(
-			// 		resource.TestCheckResourceAttr("scaffolding_example.test", "configurable_attribute", "two"),
-			// 	),
-			// },
-			// // Delete testing automatically occurs in TestCase
+			// Update and Read testing
+			{
+				Config: testAccStorageDirResourceConfig([]string{"foo", "baz", "quux"}),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckTypeSetElemAttr("proxmoxve_storage_dir.test", "nodes.*", "foo"),
+					resource.TestCheckTypeSetElemAttr("proxmoxve_storage_dir.test", "nodes.*", "baz"),
+					resource.TestCheckTypeSetElemAttr("proxmoxve_storage_dir.test", "nodes.*", "quux"),
+				),
+			},
+			// Delete testing automatically occurs in TestCase
 		},
 	})
 }
 
-func testAccStorageDirResourceConfig(storage, path string) string {
+func testAccStorageDirResourceConfig(nodes []string) string {
 	return fmt.Sprintf(`
 		resource "proxmoxve_storage_dir" "test" {
-			storage = "%[1]s"
-			path    = "%[2]s"
-			nodes   = ["foobar"]
+			storage = "testacc_storage"
+			path    = "/foo/bar"
+			nodes   = ["%s"]
 		}
-		`, storage, path)
+		`, strings.Join(nodes, `","`))
 }
