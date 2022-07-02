@@ -20,6 +20,13 @@ resource "proxmoxve_storage_dir" "test" {
   path    = "/test"
 }
 
+resource "proxmoxve_storage_nfs" "test" {
+  storage = "nfs_test"
+  server  = "1.2.3.4"
+  export  = "/test"
+  disable = true
+}
+
 output "version" {
   value = data.proxmoxve_version.current
 }

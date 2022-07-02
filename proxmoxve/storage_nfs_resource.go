@@ -14,13 +14,13 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ tfsdk.ResourceType = storageDirResourceType{}
-var _ tfsdk.Resource = storageDirResource{}
-var _ tfsdk.ResourceWithImportState = storageDirResource{}
+var _ tfsdk.ResourceType = storageNFSResourceType{}
+var _ tfsdk.Resource = storageNFSResource{}
+var _ tfsdk.ResourceWithImportState = storageNFSResource{}
 
-type storageDirResourceType struct{}
+type storageNFSResourceType struct{}
 
-func (t storageDirResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func (t storageNFSResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		Attributes: map[string]tfsdk.Attribute{
 			"id": {
@@ -31,7 +31,11 @@ func (t storageDirResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, di
 				Type:     types.StringType,
 				Required: true,
 			},
-			"path": {
+			"server": {
+				Type:     types.StringType,
+				Required: true,
+			},
+			"export": {
 				Type:     types.StringType,
 				Required: true,
 			},
@@ -50,12 +54,12 @@ func (t storageDirResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, di
 				Optional: true,
 				Computed: true,
 			},
-			"shared": {
-				Type:     types.BoolType,
+			"preallocation": {
+				Type:     types.StringType,
 				Optional: true,
 				Computed: true,
 			},
-			"preallocation": {
+			"mount_options": {
 				Type:     types.StringType,
 				Optional: true,
 				Computed: true,
@@ -72,43 +76,50 @@ func (t storageDirResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, di
 	}, nil
 }
 
-func (t storageDirResourceType) NewResource(ctx context.Context, in tfsdk.Provider) (tfsdk.Resource, diag.Diagnostics) {
+func (t storageNFSResourceType) NewResource(ctx context.Context, in tfsdk.Provider) (tfsdk.Resource, diag.Diagnostics) {
 	provider, diags := convertProviderType(in)
-	return storageDirResource{provider: provider}, diags
+	return storageNFSResource{provider: provider}, diags
 }
 
-type storageDirResourceData struct {
+type storageNFSResourceData struct {
 	Id types.String `tfsdk:"id"`
 
 	// Required attributes
 	Storage types.String `tfsdk:"storage"`
-	Path    types.String `tfsdk:"path"`
+	Server  types.String `tfsdk:"server"`
+	Export  types.String `tfsdk:"export"`
 
 	// Optional attributes
 	Content       types.Set    `tfsdk:"content"`
 	Nodes         types.Set    `tfsdk:"nodes"`
 	Disable       types.Bool   `tfsdk:"disable"`
-	Shared        types.Bool   `tfsdk:"shared"`
 	Preallocation types.String `tfsdk:"preallocation"`
+	MountOptions  types.String `tfsdk:"mount_options"`
 
 	// Computed attributes
 	Type         types.String `tfsdk:"type"`
 	PruneBackups types.String `tfsdk:"prune_backups"`
 }
 
-type storageDirResource struct {
+type storageNFSResource struct {
 	provider provider
 }
 
-func (r storageDirResource) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
-	var data storageDirResourceData
+func (r storageNFSResource) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
+	var data storageNFSResourceData
 	diags := req.Config.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	postReq := storage.PostRequest{Client: r.provider.client, Storage: data.Storage.Value, StorageType: storage.TypeDir, DirPath: &data.Path.Value}
+	postReq := storage.PostRequest{
+		Client:      r.provider.client,
+		Storage:     data.Storage.Value,
+		StorageType: storage.TypeNFS,
+		NFSServer:   &data.Server.Value,
+		NFSExport:   &data.Export.Value,
+	}
 	if !data.Content.Null {
 		if postReq.Content == nil {
 			postReq.Content = &[]string{}
@@ -124,21 +135,21 @@ func (r storageDirResource) Create(ctx context.Context, req tfsdk.CreateResource
 	if !data.Disable.Null {
 		postReq.Disable = &data.Disable.Value
 	}
-	if !data.Shared.Null {
-		postReq.DirShared = &data.Shared.Value
+	if !data.MountOptions.Null {
+		postReq.NFSMountOptions = &data.MountOptions.Value
 	}
 	if !data.Preallocation.Null {
 		postReq.Preallocation = &data.Preallocation.Value
 	}
 	_, err := postReq.Do()
 	if err != nil {
-		resp.Diagnostics.AddError("Error creating storage_dir", err.Error())
+		resp.Diagnostics.AddError("Error creating storage_nfs", err.Error())
 		return
 	}
 
 	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Do()
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading storage_dir", err.Error())
+		resp.Diagnostics.AddError("Error reading storage_nfs", err.Error())
 		return
 	}
 
@@ -147,14 +158,14 @@ func (r storageDirResource) Create(ctx context.Context, req tfsdk.CreateResource
 		return
 	}
 
-	tflog.Trace(ctx, "created storage_dir")
+	tflog.Trace(ctx, "created storage_nfs")
 
 	diags = resp.State.Set(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 }
 
-func (r storageDirResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest, resp *tfsdk.ReadResourceResponse) {
-	var data storageDirResourceData
+func (r storageNFSResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest, resp *tfsdk.ReadResourceResponse) {
+	var data storageNFSResourceData
 	diags := req.State.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -168,7 +179,7 @@ func (r storageDirResource) Read(ctx context.Context, req tfsdk.ReadResourceRequ
 			resp.State.RemoveResource(ctx)
 			return
 		}
-		resp.Diagnostics.AddError("Error reading storage_dir", err.Error())
+		resp.Diagnostics.AddError("Error reading storage_nfs", err.Error())
 		return
 	}
 
@@ -181,8 +192,8 @@ func (r storageDirResource) Read(ctx context.Context, req tfsdk.ReadResourceRequ
 	resp.Diagnostics.Append(diags...)
 }
 
-func (r storageDirResource) Update(ctx context.Context, req tfsdk.UpdateResourceRequest, resp *tfsdk.UpdateResourceResponse) {
-	var data storageDirResourceData
+func (r storageNFSResource) Update(ctx context.Context, req tfsdk.UpdateResourceRequest, resp *tfsdk.UpdateResourceResponse) {
+	var data storageNFSResourceData
 	diags := req.Config.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -205,21 +216,21 @@ func (r storageDirResource) Update(ctx context.Context, req tfsdk.UpdateResource
 	if !data.Disable.Null {
 		putReq.Disable = &data.Disable.Value
 	}
-	if !data.Shared.Null {
-		putReq.Shared = &data.Shared.Value
+	if !data.MountOptions.Null {
+		putReq.NFSMountOptions = &data.MountOptions.Value
 	}
 	if !data.Preallocation.Null {
 		putReq.Preallocation = &data.Preallocation.Value
 	}
 	_, err := putReq.Do()
 	if err != nil {
-		resp.Diagnostics.AddError("Error creating storage_dir", err.Error())
+		resp.Diagnostics.AddError("Error creating storage_nfs", err.Error())
 		return
 	}
 
 	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Do()
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading storage_dir", err.Error())
+		resp.Diagnostics.AddError("Error reading storage_nfs", err.Error())
 		return
 	}
 
@@ -228,14 +239,14 @@ func (r storageDirResource) Update(ctx context.Context, req tfsdk.UpdateResource
 		return
 	}
 
-	tflog.Trace(ctx, "updated storage_dir")
+	tflog.Trace(ctx, "updated storage_nfs")
 
 	diags = resp.State.Set(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 }
 
-func (r storageDirResource) Delete(ctx context.Context, req tfsdk.DeleteResourceRequest, resp *tfsdk.DeleteResourceResponse) {
-	var data storageDirResourceData
+func (r storageNFSResource) Delete(ctx context.Context, req tfsdk.DeleteResourceRequest, resp *tfsdk.DeleteResourceResponse) {
+	var data storageNFSResourceData
 	diags := req.State.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 
@@ -245,25 +256,26 @@ func (r storageDirResource) Delete(ctx context.Context, req tfsdk.DeleteResource
 
 	err := storage.ItemDeleteRequest{Client: r.provider.client, Storage: data.Storage.Value}.Do()
 	if err != nil {
-		resp.Diagnostics.AddError("Error deleting storage_dir", err.Error())
+		resp.Diagnostics.AddError("Error deleting storage_nfs", err.Error())
 		return
 	}
 }
 
-func (r storageDirResource) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
+func (r storageNFSResource) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
 	tfsdk.ResourceImportStatePassthroughID(ctx, tftypes.NewAttributePath().WithAttributeName("storage"), req, resp)
 }
 
-func (r storageDirResource) convertAPIGetResponseToTerraform(ctx context.Context, apiData storage.ItemGetResponse, tfData *storageDirResourceData) diag.Diagnostics {
+func (r storageNFSResource) convertAPIGetResponseToTerraform(ctx context.Context, apiData storage.ItemGetResponse, tfData *storageNFSResourceData) diag.Diagnostics {
 	var diags diag.Diagnostics
 	diags = append(diags, tfsdk.ValueFrom(ctx, apiData.Content, types.SetType{ElemType: types.StringType}, &tfData.Content)...)
 	diags = append(diags, tfsdk.ValueFrom(ctx, apiData.Nodes, types.SetType{ElemType: types.StringType}, &tfData.Nodes)...)
 
 	tfData.Id = types.String{Value: apiData.Storage}
 	tfData.Storage = types.String{Value: apiData.Storage}
-	tfData.Path = types.String{Value: apiData.Path}
+	tfData.Server = types.String{Value: apiData.NFSServer}
 	tfData.PruneBackups = types.String{Value: apiData.PruneBackups}
-	tfData.Shared = types.Bool{Value: apiData.Shared}
+	tfData.MountOptions = types.String{Value: apiData.NFSMountOptions}
+	tfData.Export = types.String{Value: apiData.NFSExport}
 	tfData.Type = types.String{Value: apiData.Type}
 
 	tfData.Disable = types.Bool{Value: apiData.Disable}
