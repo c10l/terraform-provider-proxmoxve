@@ -16,8 +16,13 @@ data "proxmoxve_storage" "local" {
 }
 
 resource "proxmoxve_storage_dir" "test" {
-  storage = "test"
+  storage = "dir_test"
   path    = "/test"
+}
+
+resource "proxmoxve_storage_btrfs" "test" {
+  storage = "btrfs_test"
+  path    = "/foo/bar"
 }
 
 resource "proxmoxve_storage_nfs" "test" {
