@@ -108,7 +108,7 @@ func (r storageDirResource) Create(ctx context.Context, req tfsdk.CreateResource
 		return
 	}
 
-	postReq := storage.PostRequest{Client: r.provider.client, Storage: data.Storage.Value, StorageType: "dir", Path: &data.Path.Value}
+	postReq := storage.PostRequest{Client: r.provider.client, Storage: data.Storage.Value, StorageType: storage.TypeDir, Path: &data.Path.Value}
 	if !data.Content.Null {
 		if postReq.Content == nil {
 			postReq.Content = &[]string{}
