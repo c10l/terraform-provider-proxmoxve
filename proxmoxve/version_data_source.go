@@ -41,6 +41,13 @@ type versionDatasource struct {
 	provider provider
 }
 
+type VersionData struct {
+	ID      types.String `tfsdk:"id"`
+	Release types.String `tfsdk:"release"`
+	RepoID  types.String `tfsdk:"repoid"`
+	Version types.String `tfsdk:"version"`
+}
+
 // NewDataSource -
 func (v versionDatasourceType) NewDataSource(ctx context.Context, in tfsdk.Provider) (tfsdk.DataSource, diag.Diagnostics) {
 	provider, diags := convertProviderType(in)
@@ -52,7 +59,7 @@ func (v versionDatasourceType) NewDataSource(ctx context.Context, in tfsdk.Provi
 
 // Read -
 func (v versionDatasource) Read(ctx context.Context, req tfsdk.ReadDataSourceRequest, resp *tfsdk.ReadDataSourceResponse) {
-	var data Version
+	var data VersionData
 	diags := req.Config.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
