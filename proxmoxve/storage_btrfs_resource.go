@@ -121,13 +121,13 @@ func (r storageBTRFSResource) Create(ctx context.Context, req tfsdk.CreateResour
 	if !data.Preallocation.Null {
 		postReq.Preallocation = &data.Preallocation.Value
 	}
-	_, err := postReq.Do()
+	_, err := postReq.Post()
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating storage_btrfs", err.Error())
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Do()
+	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Get()
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading storage_btrfs", err.Error())
 		return
@@ -152,7 +152,7 @@ func (r storageBTRFSResource) Read(ctx context.Context, req tfsdk.ReadResourceRe
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Do()
+	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Get()
 	if err != nil {
 		// If resource has been deleted outside of Terraform, we remove it from the plan state so it can be re-created.
 		if strings.Contains(err.Error(), fmt.Sprintf("500 storage '%s' does not exist", data.Storage.Value)) {
@@ -199,13 +199,13 @@ func (r storageBTRFSResource) Update(ctx context.Context, req tfsdk.UpdateResour
 	if !data.Preallocation.Null {
 		putReq.Preallocation = &data.Preallocation.Value
 	}
-	_, err := putReq.Do()
+	_, err := putReq.Put()
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating storage_btrfs", err.Error())
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Do()
+	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Get()
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading storage_btrfs", err.Error())
 		return
@@ -231,7 +231,7 @@ func (r storageBTRFSResource) Delete(ctx context.Context, req tfsdk.DeleteResour
 		return
 	}
 
-	err := storage.ItemDeleteRequest{Client: r.provider.client, Storage: data.Storage.Value}.Do()
+	err := storage.ItemDeleteRequest{Client: r.provider.client, Storage: data.Storage.Value}.Delete()
 	if err != nil {
 		resp.Diagnostics.AddError("Error deleting storage_btrfs", err.Error())
 		return

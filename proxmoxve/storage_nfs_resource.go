@@ -141,13 +141,13 @@ func (r storageNFSResource) Create(ctx context.Context, req tfsdk.CreateResource
 	if !data.Preallocation.Null {
 		postReq.Preallocation = &data.Preallocation.Value
 	}
-	_, err := postReq.Do()
+	_, err := postReq.Post()
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating storage_nfs", err.Error())
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Do()
+	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Get()
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading storage_nfs", err.Error())
 		return
@@ -172,7 +172,7 @@ func (r storageNFSResource) Read(ctx context.Context, req tfsdk.ReadResourceRequ
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Do()
+	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Get()
 	if err != nil {
 		// If resource has been deleted outside of Terraform, we remove it from the plan state so it can be re-created.
 		if strings.Contains(err.Error(), fmt.Sprintf("500 storage '%s' does not exist", data.Storage.Value)) {
@@ -222,13 +222,13 @@ func (r storageNFSResource) Update(ctx context.Context, req tfsdk.UpdateResource
 	if !data.Preallocation.Null {
 		putReq.Preallocation = &data.Preallocation.Value
 	}
-	_, err := putReq.Do()
+	_, err := putReq.Put()
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating storage_nfs", err.Error())
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Do()
+	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Get()
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading storage_nfs", err.Error())
 		return
@@ -254,7 +254,7 @@ func (r storageNFSResource) Delete(ctx context.Context, req tfsdk.DeleteResource
 		return
 	}
 
-	err := storage.ItemDeleteRequest{Client: r.provider.client, Storage: data.Storage.Value}.Do()
+	err := storage.ItemDeleteRequest{Client: r.provider.client, Storage: data.Storage.Value}.Delete()
 	if err != nil {
 		resp.Diagnostics.AddError("Error deleting storage_nfs", err.Error())
 		return

@@ -96,7 +96,7 @@ func (d storageDatasource) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: d.provider.client, Storage: data.Storage.Value}.Do()
+	storage, err := storage.ItemGetRequest{Client: d.provider.client, Storage: data.Storage.Value}.Get()
 	if err != nil {
 		resp.Diagnostics.AddError("Error retrieving version", err.Error())
 		return

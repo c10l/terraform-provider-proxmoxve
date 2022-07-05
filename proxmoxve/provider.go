@@ -144,7 +144,7 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 		tlsInsecure = config.TLSInsecure.Value
 	}
 
-	c, err := proxmox.NewClient(baseURL, tokenID, secret, tlsInsecure)
+	c, err := proxmox.NewAPITokenClient(baseURL, tokenID, secret, tlsInsecure)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create client",
