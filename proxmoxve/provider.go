@@ -38,6 +38,11 @@ func (p *provider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics)
 				Optional:  true,
 				Sensitive: true,
 			},
+			"root_password": {
+				Type:      types.StringType,
+				Optional:  true,
+				Sensitive: true,
+			},
 			"tls_insecure": {
 				Type:     types.BoolType,
 				Optional: true,
@@ -48,10 +53,11 @@ func (p *provider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics)
 
 // Provider schema struct
 type providerData struct {
-	BaseURL     types.String `tfsdk:"base_url"`
-	TokenID     types.String `tfsdk:"token_id"`
-	Secret      types.String `tfsdk:"secret"`
-	TLSInsecure types.Bool   `tfsdk:"tls_insecure"`
+	BaseURL      types.String `tfsdk:"base_url"`
+	TokenID      types.String `tfsdk:"token_id"`
+	Secret       types.String `tfsdk:"secret"`
+	RootPassword types.String `tfsdk:"root_password"`
+	TLSInsecure  types.Bool   `tfsdk:"tls_insecure"`
 }
 
 // Configure -
