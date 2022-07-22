@@ -148,7 +148,7 @@ func (r acmeAccountResource) Read(ctx context.Context, req tfsdk.ReadResourceReq
 	account, err := account.ItemGetRequest{Client: r.provider.rootClient, Name: name}.Get()
 	if err != nil {
 		// If resource has been deleted outside of Terraform, we remove it from the plan state so it can be re-created.
-		if strings.Contains(err.Error(), fmt.Sprintf("500 account '%s' does not exist", name)) {
+		if strings.Contains(err.Error(), fmt.Sprintf("ACME account config file '%s' does not exist", name)) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
