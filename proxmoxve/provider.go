@@ -19,6 +19,7 @@ func New() tfsdk.Provider {
 type provider struct {
 	configured bool
 	client     *proxmox.Client
+	rootClient *proxmox.Client
 }
 
 // GetSchema
@@ -92,50 +93,6 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 		return
 	}
 
-	var tokenID string
-	if config.TokenID.Unknown {
-		resp.Diagnostics.AddWarning(
-			"Unable to create client",
-			"Cannot use unknown value as Token ID",
-		)
-		return
-	}
-	if config.TokenID.Null {
-		tokenID = os.Getenv("PROXMOXVE_TOKEN_ID")
-	} else {
-		tokenID = config.TokenID.Value
-	}
-	if tokenID == "" {
-		// Error vs warning - empty value must stop execution
-		resp.Diagnostics.AddError(
-			"Unable to find base_url",
-			"Token ID cannot be an empty string",
-		)
-		return
-	}
-
-	var secret string
-	if config.Secret.Unknown {
-		resp.Diagnostics.AddWarning(
-			"Unable to create client",
-			"Cannot use unknown value as Secret",
-		)
-		return
-	}
-	if config.Secret.Null {
-		secret = os.Getenv("PROXMOXVE_SECRET")
-	} else {
-		secret = config.Secret.Value
-	}
-	if secret == "" {
-		// Error vs warning - empty value must stop execution
-		resp.Diagnostics.AddError(
-			"Unable to find secret",
-			"Secret cannot be an empty string",
-		)
-		return
-	}
-
 	var tlsInsecure bool
 	if config.TLSInsecure.Null {
 		var err error
@@ -150,17 +107,75 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 		tlsInsecure = config.TLSInsecure.Value
 	}
 
-	c, err := proxmox.NewAPITokenClient(baseURL, tokenID, secret, tlsInsecure)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to create client",
-			"Unable to create ProxMox VE client:\n\n"+err.Error(),
-		)
+	tokenClient, tokenClientDiags := getTokenClient(baseURL, tlsInsecure, config.TokenID, config.Secret)
+	resp.Diagnostics.Append(tokenClientDiags...)
+	p.client = tokenClient
+
+	rootClient, rootClientDiags := getRootClient(baseURL, tlsInsecure, config.RootPassword)
+	resp.Diagnostics.Append(rootClientDiags...)
+	p.rootClient = rootClient
+
+	if diags.HasError() {
 		return
 	}
 
-	p.client = c
 	p.configured = true
+}
+
+func getRootClient(baseURL string, insecure bool, rootPassword types.String) (*proxmox.Client, diag.Diagnostics) {
+	diags := diag.Diagnostics{}
+
+	pwd := rootPassword.Value
+	if rootPassword.Null {
+		pwd = os.Getenv("PROXMOXVE_ROOT_PASSWORD")
+	}
+
+	rootClient, err := proxmox.NewTicketClient(baseURL, "root@pam", pwd, insecure)
+	if err != nil {
+		diags.AddError(
+			"Unable to create root@pam ticket client",
+			"Unable to create ProxMox VE client with root@pam user and password:\n\n"+err.Error(),
+		)
+	}
+
+	return rootClient, diags
+}
+
+func getTokenClient(baseURL string, insecure bool, tokenID, tokenSecret types.String) (*proxmox.Client, diag.Diagnostics) {
+	diags := diag.Diagnostics{}
+
+	id := tokenID.Value
+	if tokenID.Null {
+		id = os.Getenv("PROXMOXVE_TOKEN_ID")
+	}
+	if id == "" {
+		diags.AddError(
+			"Unable to find token_id",
+			"Token ID cannot be an empty string",
+		)
+	}
+
+	secret := tokenSecret.Value
+	if tokenSecret.Null {
+		secret = os.Getenv("PROXMOXVE_SECRET")
+	}
+	if secret == "" {
+		// Error vs warning - empty value must stop execution
+		diags.AddError(
+			"Unable to find secret",
+			"Secret cannot be an empty string",
+		)
+	}
+
+	tokenClient, err := proxmox.NewAPITokenClient(baseURL, id, secret, insecure)
+	if err != nil {
+		diags.AddError(
+			"Unable to create token+secret client",
+			"Unable to create ProxMox VE client with API token:\n\n"+err.Error(),
+		)
+	}
+
+	return tokenClient, diags
 }
 
 // GetResources - Defines provider resources
@@ -169,6 +184,7 @@ func (p *provider) GetResources(_ context.Context) (map[string]tfsdk.ResourceTyp
 		"proxmoxve_storage_dir":   storageDirResourceType{},
 		"proxmoxve_storage_nfs":   storageNFSResourceType{},
 		"proxmoxve_storage_btrfs": storageBTRFSResourceType{},
+		"proxmoxve_acme_account":  acmeAccountResourceType{},
 	}, nil
 }
 
