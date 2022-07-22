@@ -81,9 +81,6 @@ func (r acmeAccountResource) Create(ctx context.Context, req tfsdk.CreateResourc
 	}
 
 	postReq := account.PostRequest{Client: r.provider.rootClient, Contact: data.Contact.Value}
-	if data.Name.Null {
-		data.Name.Value = "default"
-	}
 	postReq.Name = data.Name.Value
 	if !data.Directory.Null {
 		postReq.Directory = &data.Directory.Value
@@ -119,7 +116,7 @@ func (r acmeAccountResource) getCreatedWithTimeout(ctx context.Context, data *ac
 			}
 			time.Sleep(5 * time.Second)
 			elapsedTime += 5 * time.Second
-			fmt.Printf("Waiting for account to be created... (%s)\n", elapsedTime)
+			fmt.Printf("Waiting for proxmoxve_acme_account.%s to be created... (%s)\n", data.Name.Value, elapsedTime)
 		}
 	}()
 
@@ -141,10 +138,7 @@ func (r acmeAccountResource) Read(ctx context.Context, req tfsdk.ReadResourceReq
 		return
 	}
 
-	name := "default"
-	if !data.Name.Null {
-		name = data.Name.Value
-	}
+	name := data.Name.Value
 	account, err := account.ItemGetRequest{Client: r.provider.rootClient, Name: name}.Get()
 	if err != nil {
 		// If resource has been deleted outside of Terraform, we remove it from the plan state so it can be re-created.
@@ -166,7 +160,39 @@ func (r acmeAccountResource) Read(ctx context.Context, req tfsdk.ReadResourceReq
 }
 
 func (r acmeAccountResource) Update(ctx context.Context, req tfsdk.UpdateResourceRequest, resp *tfsdk.UpdateResourceResponse) {
-	// TODO: Implement in API client first
+	var data acmeAccountResourceData
+	diags := req.Config.Get(ctx, &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	putReq := account.ItemPutRequest{Client: r.provider.rootClient, Name: data.Name.Value}
+	putReq.Contact = data.Contact.Value
+	_, err := putReq.Put()
+	if err != nil {
+		resp.Diagnostics.AddError("Error updating acme_account", err.Error())
+		return
+	}
+
+	account, err := account.ItemGetRequest{Client: r.provider.client, Name: data.Name.Value}.Get()
+	if err != nil {
+		resp.Diagnostics.AddError("Error reading acme_account", err.Error())
+		return
+	}
+
+	resp.Diagnostics.Append(r.convertAPIGetResponseToTerraform(ctx, *account, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(r.convertAPIGetResponseToTerraform(ctx, *account, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	diags = resp.State.Set(ctx, &data)
+	resp.Diagnostics.Append(diags...)
 }
 
 func (r acmeAccountResource) Delete(ctx context.Context, req tfsdk.DeleteResourceRequest, resp *tfsdk.DeleteResourceResponse) {

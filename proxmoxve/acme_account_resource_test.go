@@ -1,6 +1,7 @@
 package proxmoxve
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -13,7 +14,7 @@ func TestACMEAccountResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccACMEAccountResourceConfig(),
+				Config: testAccACMEAccountResourceConfig("terraform_test_account", "foo@bar.com"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("proxmoxve_acme_account.test", "id", "terraform_test_account"),
 					resource.TestCheckResourceAttr("proxmoxve_acme_account.test", "name", "terraform_test_account"),
@@ -28,28 +29,29 @@ func TestACMEAccountResource(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
-			// // Update and Read testing
-			// {
-			// 	Config: testAccStorageBTRFSResourceConfig([]string{"foo", "baz", "quux"}, `"iso"`),
-			// 	Check: resource.ComposeAggregateTestCheckFunc(
-			// 		resource.TestCheckTypeSetElemAttr("proxmoxve_acme_account.test", "nodes.*", "foo"),
-			// 		resource.TestCheckTypeSetElemAttr("proxmoxve_acme_account.test", "nodes.*", "baz"),
-			// 		resource.TestCheckTypeSetElemAttr("proxmoxve_acme_account.test", "nodes.*", "quux"),
-			// 		resource.TestCheckTypeSetElemAttr("proxmoxve_acme_account.test", "content.*", "iso"),
-			// 	),
-			// },
+			// Update and Read testing
+			{
+				Config: testAccACMEAccountResourceConfig("terraform_test_account_update", "foo@barbaz.com"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("proxmoxve_acme_account.test", "id", "terraform_test_account_update"),
+					resource.TestCheckResourceAttr("proxmoxve_acme_account.test", "name", "terraform_test_account_update"),
+					resource.TestCheckResourceAttr("proxmoxve_acme_account.test", "contact", "foo@barbaz.com"),
+					resource.TestCheckResourceAttr("proxmoxve_acme_account.test", "directory", "https://127.0.0.1:14000/dir"),
+					resource.TestCheckResourceAttr("proxmoxve_acme_account.test", "tos_url", "foobar"),
+				),
+			},
 			// Delete testing automatically occurs in TestCase
 		},
 	})
 }
 
-func testAccACMEAccountResourceConfig() string {
-	return `
+func testAccACMEAccountResourceConfig(name, contact string) string {
+	return fmt.Sprintf(`
 		resource "proxmoxve_acme_account" "test" {
-			name      = "terraform_test_account"
-			contact   = "foo@bar.com"
+			name      = "%s"
+			contact   = "%s"
 			directory = "https://127.0.0.1:14000/dir"
 			tos_url   = "foobar"
 		}
-	`
+	`, name, contact)
 }
