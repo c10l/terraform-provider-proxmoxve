@@ -23,6 +23,7 @@ resource "proxmoxve_storage_dir" "test" {
 resource "proxmoxve_storage_btrfs" "test" {
   storage = "btrfs_test"
   path    = "/foo/bar"
+  disable = true
 }
 
 resource "proxmoxve_storage_nfs" "test" {
