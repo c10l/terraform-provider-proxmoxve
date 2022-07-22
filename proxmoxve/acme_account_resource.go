@@ -33,16 +33,19 @@ func (t acmeAccountResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, d
 				Type:     types.StringType,
 			},
 			"directory": {
-				Optional: true,
-				Type:     types.StringType,
+				Optional:      true,
+				Type:          types.StringType,
+				PlanModifiers: []tfsdk.AttributePlanModifier{tfsdk.RequiresReplace()},
 			},
 			"name": {
-				Optional: true,
-				Type:     types.StringType,
+				Optional:      true,
+				Type:          types.StringType,
+				PlanModifiers: []tfsdk.AttributePlanModifier{tfsdk.RequiresReplace()},
 			},
 			"tos_url": {
-				Optional: true,
-				Type:     types.StringType,
+				Optional:      true,
+				Type:          types.StringType,
+				PlanModifiers: []tfsdk.AttributePlanModifier{tfsdk.RequiresReplace()},
 			},
 		},
 	}, nil
