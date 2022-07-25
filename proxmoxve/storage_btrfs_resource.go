@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/c10l/proxmoxve-client-go/api/storage"
+	"github.com/c10l/proxmoxve-client-go/helpers"
+	pvetypes "github.com/c10l/proxmoxve-client-go/helpers/types"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -116,7 +118,7 @@ func (r storageBTRFSResource) Create(ctx context.Context, req tfsdk.CreateResour
 		resp.Diagnostics.Append(data.Nodes.ElementsAs(ctx, postReq.Nodes, false)...)
 	}
 	if !data.Disable.Null {
-		postReq.Disable = &data.Disable.Value
+		postReq.Disable = helpers.PtrTo(pvetypes.PVEBool(data.Disable.Value))
 	}
 	if !data.Preallocation.Null {
 		postReq.Preallocation = &data.Preallocation.Value
@@ -194,7 +196,7 @@ func (r storageBTRFSResource) Update(ctx context.Context, req tfsdk.UpdateResour
 		resp.Diagnostics.Append(data.Nodes.ElementsAs(ctx, putReq.Nodes, false)...)
 	}
 	if !data.Disable.Null {
-		putReq.Disable = &data.Disable.Value
+		putReq.Disable = helpers.PtrTo(pvetypes.PVEBool(data.Disable.Value))
 	}
 	if !data.Preallocation.Null {
 		putReq.Preallocation = &data.Preallocation.Value

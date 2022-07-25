@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/c10l/proxmoxve-client-go/api/storage"
+	"github.com/c10l/proxmoxve-client-go/helpers"
+	pvetypes "github.com/c10l/proxmoxve-client-go/helpers/types"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -133,7 +135,7 @@ func (r storageNFSResource) Create(ctx context.Context, req tfsdk.CreateResource
 		resp.Diagnostics.Append(data.Nodes.ElementsAs(ctx, postReq.Nodes, false)...)
 	}
 	if !data.Disable.Null {
-		postReq.Disable = &data.Disable.Value
+		postReq.Disable = helpers.PtrTo(pvetypes.PVEBool(data.Disable.Value))
 	}
 	if !data.MountOptions.Null {
 		postReq.NFSMountOptions = &data.MountOptions.Value
@@ -214,7 +216,7 @@ func (r storageNFSResource) Update(ctx context.Context, req tfsdk.UpdateResource
 		resp.Diagnostics.Append(data.Nodes.ElementsAs(ctx, putReq.Nodes, false)...)
 	}
 	if !data.Disable.Null {
-		putReq.Disable = &data.Disable.Value
+		putReq.Disable = helpers.PtrTo(pvetypes.PVEBool(data.Disable.Value))
 	}
 	if !data.MountOptions.Null {
 		putReq.NFSMountOptions = &data.MountOptions.Value

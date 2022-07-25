@@ -186,11 +186,6 @@ func (r acmeAccountResource) Update(ctx context.Context, req tfsdk.UpdateResourc
 		return
 	}
 
-	resp.Diagnostics.Append(r.convertAPIGetResponseToTerraform(ctx, *account, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	diags = resp.State.Set(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 }
