@@ -40,6 +40,11 @@ resource "proxmoxve_acme_account" "test" {
   tos_url   = "foobar"
 }
 
+resource "proxmoxve_acme_plugin" "test" {
+  id   = "pmve_acme_plugin_test"
+  type = "standalone"
+}
+
 output "version" {
   value = data.proxmoxve_version.current
 }

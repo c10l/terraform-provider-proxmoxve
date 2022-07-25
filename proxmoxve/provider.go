@@ -185,6 +185,7 @@ func (p *provider) GetResources(_ context.Context) (map[string]tfsdk.ResourceTyp
 		"proxmoxve_storage_nfs":   storageNFSResourceType{},
 		"proxmoxve_storage_btrfs": storageBTRFSResourceType{},
 		"proxmoxve_acme_account":  acmeAccountResourceType{},
+		"proxmoxve_acme_plugin":   acmePluginResourceType{},
 	}, nil
 }
 
