@@ -1,7 +1,6 @@
 package proxmoxve
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -17,6 +16,7 @@ func TestACMEPluginResource(t *testing.T) {
 				Config: testAccACMEPluginResourceConfig(),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("proxmoxve_acme_plugin.test", "id", "pmve_acme_plugin_test"),
+					resource.TestCheckResourceAttr("proxmoxve_acme_plugin.test", "type", "standalone"),
 				),
 			},
 			// ImportState testing
@@ -42,10 +42,10 @@ func TestACMEPluginResource(t *testing.T) {
 }
 
 func testAccACMEPluginResourceConfig() string {
-	return fmt.Sprintf(`
+	return `
 		resource "proxmoxve_acme_plugin" "test" {
 			id   = "pmve_acme_plugin_test"
 			type = "standalone"
 		}
-	`)
+	`
 }

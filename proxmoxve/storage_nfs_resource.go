@@ -9,9 +9,9 @@ import (
 	"github.com/c10l/proxmoxve-client-go/helpers"
 	pvetypes "github.com/c10l/proxmoxve-client-go/helpers/types"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
@@ -264,7 +264,7 @@ func (r storageNFSResource) Delete(ctx context.Context, req tfsdk.DeleteResource
 }
 
 func (r storageNFSResource) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
-	tfsdk.ResourceImportStatePassthroughID(ctx, tftypes.NewAttributePath().WithAttributeName("storage"), req, resp)
+	tfsdk.ResourceImportStatePassthroughID(ctx, path.Root("storage"), req, resp)
 }
 
 func (r storageNFSResource) convertAPIGetResponseToTerraform(ctx context.Context, apiData storage.ItemGetResponse, tfData *storageNFSResourceData) diag.Diagnostics {

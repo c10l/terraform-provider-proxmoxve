@@ -6,9 +6,9 @@ import (
 	version "github.com/c10l/proxmoxve-client-go/api/version"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-go/tftypes"
 )
 
 type versionDatasourceType struct{}
@@ -72,8 +72,8 @@ func (v versionDatasource) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, tftypes.NewAttributePath().WithAttributeName("id"), &version.Version)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, tftypes.NewAttributePath().WithAttributeName("version"), &version.Version)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, tftypes.NewAttributePath().WithAttributeName("repoid"), &version.RepoID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, tftypes.NewAttributePath().WithAttributeName("release"), &version.Release)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), &version.Version)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("version"), &version.Version)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("repoid"), &version.RepoID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("release"), &version.Release)...)
 }

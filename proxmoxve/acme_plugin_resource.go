@@ -8,9 +8,9 @@ import (
 
 	"github.com/c10l/proxmoxve-client-go/api/cluster/acme/plugins"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
@@ -153,7 +153,7 @@ func (r acmePluginResource) Delete(ctx context.Context, req tfsdk.DeleteResource
 
 func (r acmePluginResource) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
 	// FIXME: Import is not importing `type` argument
-	tfsdk.ResourceImportStatePassthroughID(ctx, tftypes.NewAttributePath().WithAttributeName("id"), req, resp)
+	tfsdk.ResourceImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 func (r acmePluginResource) convertAPIGetResponseToTerraform(ctx context.Context, apiData plugins.ItemGetResponse, tfData *acmePluginResourceData) diag.Diagnostics {
