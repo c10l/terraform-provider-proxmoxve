@@ -29,7 +29,7 @@ func (t storageBTRFSResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, 
 				Computed: true,
 				Type:     types.StringType,
 			},
-			"storage": {
+			"name": {
 				Type:     types.StringType,
 				Required: true,
 			},
@@ -75,11 +75,11 @@ func (t storageBTRFSResourceType) NewResource(ctx context.Context, in tfsdk.Prov
 }
 
 type storageBTRFSResourceData struct {
-	Id types.String `tfsdk:"id"`
+	ID types.String `tfsdk:"id"`
 
 	// Required attributes
-	Storage types.String `tfsdk:"storage"`
-	Path    types.String `tfsdk:"path"`
+	Name types.String `tfsdk:"name"`
+	Path types.String `tfsdk:"path"`
 
 	// Optional attributes
 	Content       types.Set    `tfsdk:"content"`
@@ -104,7 +104,7 @@ func (r storageBTRFSResource) Create(ctx context.Context, req tfsdk.CreateResour
 		return
 	}
 
-	postReq := storage.PostRequest{Client: r.provider.client, Storage: data.Storage.Value, StorageType: storage.TypeBTRFS, DirPath: &data.Path.Value}
+	postReq := storage.PostRequest{Client: r.provider.client, Storage: data.Name.Value, StorageType: storage.TypeBTRFS, DirPath: &data.Path.Value}
 	if !data.Content.Null {
 		if postReq.Content == nil {
 			postReq.Content = &[]string{}
@@ -129,7 +129,7 @@ func (r storageBTRFSResource) Create(ctx context.Context, req tfsdk.CreateResour
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Get()
+	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Name.Value}.Get()
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading storage_btrfs", err.Error())
 		return
@@ -154,10 +154,10 @@ func (r storageBTRFSResource) Read(ctx context.Context, req tfsdk.ReadResourceRe
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Get()
+	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Name.Value}.Get()
 	if err != nil {
 		// If resource has been deleted outside of Terraform, we remove it from the plan state so it can be re-created.
-		if strings.Contains(err.Error(), fmt.Sprintf("500 storage '%s' does not exist", data.Storage.Value)) {
+		if strings.Contains(err.Error(), fmt.Sprintf("500 storage '%s' does not exist", data.Name.Value)) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -182,7 +182,7 @@ func (r storageBTRFSResource) Update(ctx context.Context, req tfsdk.UpdateResour
 		return
 	}
 
-	putReq := storage.ItemPutRequest{Client: r.provider.client, Storage: data.Storage.Value}
+	putReq := storage.ItemPutRequest{Client: r.provider.client, Storage: data.Name.Value}
 	if !data.Content.Null {
 		if putReq.Content == nil {
 			putReq.Content = &[]string{}
@@ -207,7 +207,7 @@ func (r storageBTRFSResource) Update(ctx context.Context, req tfsdk.UpdateResour
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Get()
+	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Name.Value}.Get()
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading storage_btrfs", err.Error())
 		return
@@ -233,7 +233,7 @@ func (r storageBTRFSResource) Delete(ctx context.Context, req tfsdk.DeleteResour
 		return
 	}
 
-	err := storage.ItemDeleteRequest{Client: r.provider.client, Storage: data.Storage.Value}.Delete()
+	err := storage.ItemDeleteRequest{Client: r.provider.client, Storage: data.Name.Value}.Delete()
 	if err != nil {
 		resp.Diagnostics.AddError("Error deleting storage_btrfs", err.Error())
 		return
@@ -241,7 +241,7 @@ func (r storageBTRFSResource) Delete(ctx context.Context, req tfsdk.DeleteResour
 }
 
 func (r storageBTRFSResource) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
-	tfsdk.ResourceImportStatePassthroughID(ctx, path.Root("storage"), req, resp)
+	tfsdk.ResourceImportStatePassthroughID(ctx, path.Root("name"), req, resp)
 }
 
 func (r storageBTRFSResource) convertAPIGetResponseToTerraform(ctx context.Context, apiData storage.ItemGetResponse, tfData *storageBTRFSResourceData) diag.Diagnostics {
@@ -249,8 +249,8 @@ func (r storageBTRFSResource) convertAPIGetResponseToTerraform(ctx context.Conte
 	diags = append(diags, tfsdk.ValueFrom(ctx, apiData.Content, types.SetType{ElemType: types.StringType}, &tfData.Content)...)
 	diags = append(diags, tfsdk.ValueFrom(ctx, apiData.Nodes, types.SetType{ElemType: types.StringType}, &tfData.Nodes)...)
 
-	tfData.Id = types.String{Value: apiData.Storage}
-	tfData.Storage = types.String{Value: apiData.Storage}
+	tfData.ID = types.String{Value: apiData.Storage}
+	tfData.Name = types.String{Value: apiData.Storage}
 	tfData.Path = types.String{Value: apiData.Path}
 	tfData.PruneBackups = types.String{Value: apiData.PruneBackups}
 	tfData.Type = types.String{Value: apiData.Type}

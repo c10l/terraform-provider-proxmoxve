@@ -29,7 +29,7 @@ func (t storageNFSResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, di
 				Computed: true,
 				Type:     types.StringType,
 			},
-			"storage": {
+			"name": {
 				Type:     types.StringType,
 				Required: true,
 			},
@@ -84,12 +84,12 @@ func (t storageNFSResourceType) NewResource(ctx context.Context, in tfsdk.Provid
 }
 
 type storageNFSResourceData struct {
-	Id types.String `tfsdk:"id"`
+	ID types.String `tfsdk:"id"`
 
 	// Required attributes
-	Storage types.String `tfsdk:"storage"`
-	Server  types.String `tfsdk:"server"`
-	Export  types.String `tfsdk:"export"`
+	Name   types.String `tfsdk:"name"`
+	Server types.String `tfsdk:"server"`
+	Export types.String `tfsdk:"export"`
 
 	// Optional attributes
 	Content       types.Set    `tfsdk:"content"`
@@ -117,7 +117,7 @@ func (r storageNFSResource) Create(ctx context.Context, req tfsdk.CreateResource
 
 	postReq := storage.PostRequest{
 		Client:      r.provider.client,
-		Storage:     data.Storage.Value,
+		Storage:     data.Name.Value,
 		StorageType: storage.TypeNFS,
 		NFSServer:   &data.Server.Value,
 		NFSExport:   &data.Export.Value,
@@ -149,7 +149,7 @@ func (r storageNFSResource) Create(ctx context.Context, req tfsdk.CreateResource
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Get()
+	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Name.Value}.Get()
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading storage_nfs", err.Error())
 		return
@@ -174,10 +174,10 @@ func (r storageNFSResource) Read(ctx context.Context, req tfsdk.ReadResourceRequ
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Get()
+	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Name.Value}.Get()
 	if err != nil {
 		// If resource has been deleted outside of Terraform, we remove it from the plan state so it can be re-created.
-		if strings.Contains(err.Error(), fmt.Sprintf("500 storage '%s' does not exist", data.Storage.Value)) {
+		if strings.Contains(err.Error(), fmt.Sprintf("500 storage '%s' does not exist", data.Name.Value)) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -202,7 +202,7 @@ func (r storageNFSResource) Update(ctx context.Context, req tfsdk.UpdateResource
 		return
 	}
 
-	putReq := storage.ItemPutRequest{Client: r.provider.client, Storage: data.Storage.Value}
+	putReq := storage.ItemPutRequest{Client: r.provider.client, Storage: data.Name.Value}
 	if !data.Content.Null {
 		if putReq.Content == nil {
 			putReq.Content = &[]string{}
@@ -230,7 +230,7 @@ func (r storageNFSResource) Update(ctx context.Context, req tfsdk.UpdateResource
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Get()
+	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Name.Value}.Get()
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading storage_nfs", err.Error())
 		return
@@ -256,7 +256,7 @@ func (r storageNFSResource) Delete(ctx context.Context, req tfsdk.DeleteResource
 		return
 	}
 
-	err := storage.ItemDeleteRequest{Client: r.provider.client, Storage: data.Storage.Value}.Delete()
+	err := storage.ItemDeleteRequest{Client: r.provider.client, Storage: data.Name.Value}.Delete()
 	if err != nil {
 		resp.Diagnostics.AddError("Error deleting storage_nfs", err.Error())
 		return
@@ -264,7 +264,7 @@ func (r storageNFSResource) Delete(ctx context.Context, req tfsdk.DeleteResource
 }
 
 func (r storageNFSResource) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
-	tfsdk.ResourceImportStatePassthroughID(ctx, path.Root("storage"), req, resp)
+	tfsdk.ResourceImportStatePassthroughID(ctx, path.Root("name"), req, resp)
 }
 
 func (r storageNFSResource) convertAPIGetResponseToTerraform(ctx context.Context, apiData storage.ItemGetResponse, tfData *storageNFSResourceData) diag.Diagnostics {
@@ -272,8 +272,8 @@ func (r storageNFSResource) convertAPIGetResponseToTerraform(ctx context.Context
 	diags = append(diags, tfsdk.ValueFrom(ctx, apiData.Content, types.SetType{ElemType: types.StringType}, &tfData.Content)...)
 	diags = append(diags, tfsdk.ValueFrom(ctx, apiData.Nodes, types.SetType{ElemType: types.StringType}, &tfData.Nodes)...)
 
-	tfData.Id = types.String{Value: apiData.Storage}
-	tfData.Storage = types.String{Value: apiData.Storage}
+	tfData.ID = types.String{Value: apiData.Storage}
+	tfData.Name = types.String{Value: apiData.Storage}
 	tfData.Server = types.String{Value: apiData.NFSServer}
 	tfData.PruneBackups = types.String{Value: apiData.PruneBackups}
 	tfData.MountOptions = types.String{Value: apiData.NFSMountOptions}

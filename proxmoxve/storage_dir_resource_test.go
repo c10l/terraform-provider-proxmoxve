@@ -53,10 +53,10 @@ func TestAccStorageDirResource(t *testing.T) {
 func testAccStorageDirResourceConfig(nodes []string, shared bool) string {
 	return fmt.Sprintf(`
 		resource "proxmoxve_storage_dir" "test" {
-			storage = "testacc_storage"
-			path    = "/foo/bar"
-			nodes   = ["%s"]
-			shared  = %t
+			name   = "testacc_storage"
+			path   = "/foo/bar"
+			nodes  = ["%s"]
+			shared = %t
 		}
 		`, strings.Join(nodes, `","`), shared)
 }

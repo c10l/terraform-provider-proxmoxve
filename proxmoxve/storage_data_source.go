@@ -23,6 +23,10 @@ func (t storageDatasourceType) GetSchema(ctx context.Context) (tfsdk.Schema, dia
 				Type:     types.StringType,
 				Computed: true,
 			},
+			"name": {
+				Type:     types.StringType,
+				Required: true,
+			},
 			"type": {
 				Type:     types.StringType,
 				Computed: true,
@@ -42,10 +46,6 @@ func (t storageDatasourceType) GetSchema(ctx context.Context) (tfsdk.Schema, dia
 			"shared": {
 				Type:     types.BoolType,
 				Computed: true,
-			},
-			"storage": {
-				Type:     types.StringType,
-				Required: true,
 			},
 			"nodes": {
 				Type:     types.SetType{ElemType: types.StringType},
@@ -72,13 +72,13 @@ func (t storageDatasourceType) NewDataSource(ctx context.Context, in tfsdk.Provi
 }
 
 type storageDatasourceData struct {
-	Id            types.String `tfsdk:"id"`
+	ID            types.String `tfsdk:"id"`
+	Name          types.String `tfsdk:"name"`
 	Type          types.String `tfsdk:"type"`
 	Content       types.Set    `tfsdk:"content"`
 	Path          types.String `tfsdk:"path"`
 	PruneBackups  types.String `tfsdk:"prune_backups"`
 	Shared        types.Bool   `tfsdk:"shared"`
-	Storage       types.String `tfsdk:"storage"`
 	Nodes         types.Set    `tfsdk:"nodes"`
 	Enabled       types.Bool   `tfsdk:"enabled"`
 	Preallocation types.String `tfsdk:"preallocation"`
@@ -96,7 +96,7 @@ func (d storageDatasource) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: d.provider.client, Storage: data.Storage.Value}.Get()
+	storage, err := storage.ItemGetRequest{Client: d.provider.client, Storage: data.Name.Value}.Get()
 	if err != nil {
 		resp.Diagnostics.AddError("Error retrieving version", err.Error())
 		return
@@ -113,8 +113,8 @@ func (d storageDatasource) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 		data.Content.Elems = append(data.Nodes.Elems, value)
 	}
 
-	data.Id = types.String{Value: storage.Storage}
-	data.Storage = types.String{Value: storage.Storage}
+	data.ID = types.String{Value: storage.Storage}
+	data.Name = types.String{Value: storage.Storage}
 	data.Path = types.String{Value: storage.Path}
 	data.PruneBackups = types.String{Value: storage.PruneBackups}
 	data.Shared = types.Bool{Value: storage.Shared}

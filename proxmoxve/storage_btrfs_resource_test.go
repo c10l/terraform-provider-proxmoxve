@@ -52,7 +52,7 @@ func TestAccStorageBTRFSResource(t *testing.T) {
 func testAccStorageBTRFSResourceConfig(nodes []string, content string) string {
 	return fmt.Sprintf(`
 		resource "proxmoxve_storage_btrfs" "test" {
-			storage = "testacc_storage"
+			name    = "testacc_storage"
 			path    = "/foo/bar"
 			nodes   = ["%s"]
 			content =	[%s]

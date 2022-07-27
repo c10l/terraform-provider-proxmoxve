@@ -53,7 +53,7 @@ func TestAccStorageNFSResource(t *testing.T) {
 func testAccStorageNFSResourceConfig(mount_options string, nodes []string) string {
 	return fmt.Sprintf(`
 		resource "proxmoxve_storage_nfs" "test" {
-			storage       = "testacc_storage_nfs"
+			name          = "testacc_storage_nfs"
 			server        = "1.2.3.4"
 			export        = "/mnt/path"
 			mount_options = "%s"

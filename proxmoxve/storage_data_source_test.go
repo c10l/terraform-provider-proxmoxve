@@ -16,7 +16,7 @@ func TestAccDataSourceStorage(t *testing.T) {
 				Config: testAccDataSourceStoragenConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.proxmoxve_storage.test", "id", "local"),
-					resource.TestCheckResourceAttr("data.proxmoxve_storage.test", "storage", "local"),
+					resource.TestCheckResourceAttr("data.proxmoxve_storage.test", "name", "local"),
 					resource.TestCheckResourceAttr("data.proxmoxve_storage.test", "type", "dir"),
 					resource.TestCheckResourceAttr("data.proxmoxve_storage.test", "path", "/var/lib/vz"),
 					resource.TestCheckResourceAttr("data.proxmoxve_storage.test", "shared", "false"),
@@ -39,5 +39,5 @@ func TestAccDataSourceStorage(t *testing.T) {
 
 const testAccDataSourceStoragenConfig = `
 data proxmoxve_storage test {
-	storage = "local"
+	name = "local"
 }`

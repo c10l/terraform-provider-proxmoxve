@@ -29,7 +29,7 @@ func (t storageDirResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, di
 				Computed: true,
 				Type:     types.StringType,
 			},
-			"storage": {
+			"name": {
 				Type:     types.StringType,
 				Required: true,
 			},
@@ -80,11 +80,11 @@ func (t storageDirResourceType) NewResource(ctx context.Context, in tfsdk.Provid
 }
 
 type storageDirResourceData struct {
-	Id types.String `tfsdk:"id"`
+	ID types.String `tfsdk:"id"`
 
 	// Required attributes
-	Storage types.String `tfsdk:"storage"`
-	Path    types.String `tfsdk:"path"`
+	Name types.String `tfsdk:"name"`
+	Path types.String `tfsdk:"path"`
 
 	// Optional attributes
 	Content       types.Set    `tfsdk:"content"`
@@ -110,7 +110,7 @@ func (r storageDirResource) Create(ctx context.Context, req tfsdk.CreateResource
 		return
 	}
 
-	postReq := storage.PostRequest{Client: r.provider.client, Storage: data.Storage.Value, StorageType: storage.TypeDir, DirPath: &data.Path.Value}
+	postReq := storage.PostRequest{Client: r.provider.client, Storage: data.Name.Value, StorageType: storage.TypeDir, DirPath: &data.Path.Value}
 	if !data.Content.Null {
 		if postReq.Content == nil {
 			postReq.Content = &[]string{}
@@ -138,7 +138,7 @@ func (r storageDirResource) Create(ctx context.Context, req tfsdk.CreateResource
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Get()
+	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Name.Value}.Get()
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading storage_dir", err.Error())
 		return
@@ -163,10 +163,10 @@ func (r storageDirResource) Read(ctx context.Context, req tfsdk.ReadResourceRequ
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Get()
+	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Name.Value}.Get()
 	if err != nil {
 		// If resource has been deleted outside of Terraform, we remove it from the plan state so it can be re-created.
-		if strings.Contains(err.Error(), fmt.Sprintf("500 storage '%s' does not exist", data.Storage.Value)) {
+		if strings.Contains(err.Error(), fmt.Sprintf("500 storage '%s' does not exist", data.Name.Value)) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -191,7 +191,7 @@ func (r storageDirResource) Update(ctx context.Context, req tfsdk.UpdateResource
 		return
 	}
 
-	putReq := storage.ItemPutRequest{Client: r.provider.client, Storage: data.Storage.Value}
+	putReq := storage.ItemPutRequest{Client: r.provider.client, Storage: data.Name.Value}
 	if !data.Content.Null {
 		if putReq.Content == nil {
 			putReq.Content = &[]string{}
@@ -219,7 +219,7 @@ func (r storageDirResource) Update(ctx context.Context, req tfsdk.UpdateResource
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Storage.Value}.Get()
+	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Name.Value}.Get()
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading storage_dir", err.Error())
 		return
@@ -245,7 +245,7 @@ func (r storageDirResource) Delete(ctx context.Context, req tfsdk.DeleteResource
 		return
 	}
 
-	err := storage.ItemDeleteRequest{Client: r.provider.client, Storage: data.Storage.Value}.Delete()
+	err := storage.ItemDeleteRequest{Client: r.provider.client, Storage: data.Name.Value}.Delete()
 	if err != nil {
 		resp.Diagnostics.AddError("Error deleting storage_dir", err.Error())
 		return
@@ -253,7 +253,7 @@ func (r storageDirResource) Delete(ctx context.Context, req tfsdk.DeleteResource
 }
 
 func (r storageDirResource) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
-	tfsdk.ResourceImportStatePassthroughID(ctx, path.Root("storage"), req, resp)
+	tfsdk.ResourceImportStatePassthroughID(ctx, path.Root("name"), req, resp)
 }
 
 func (r storageDirResource) convertAPIGetResponseToTerraform(ctx context.Context, apiData storage.ItemGetResponse, tfData *storageDirResourceData) diag.Diagnostics {
@@ -261,8 +261,8 @@ func (r storageDirResource) convertAPIGetResponseToTerraform(ctx context.Context
 	diags = append(diags, tfsdk.ValueFrom(ctx, apiData.Content, types.SetType{ElemType: types.StringType}, &tfData.Content)...)
 	diags = append(diags, tfsdk.ValueFrom(ctx, apiData.Nodes, types.SetType{ElemType: types.StringType}, &tfData.Nodes)...)
 
-	tfData.Id = types.String{Value: apiData.Storage}
-	tfData.Storage = types.String{Value: apiData.Storage}
+	tfData.ID = types.String{Value: apiData.Storage}
+	tfData.Name = types.String{Value: apiData.Storage}
 	tfData.Path = types.String{Value: apiData.Path}
 	tfData.PruneBackups = types.String{Value: apiData.PruneBackups}
 	tfData.Shared = types.Bool{Value: apiData.Shared}
