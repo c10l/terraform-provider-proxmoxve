@@ -72,7 +72,7 @@ func (r acmePluginResource) Create(ctx context.Context, req tfsdk.CreateResource
 
 	tflog.Trace(ctx, "created acme_plugin")
 
-	diags = resp.State.Set(ctx, &data)
+	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
 }
 
@@ -128,7 +128,7 @@ func (r acmePluginResource) Read(ctx context.Context, req tfsdk.ReadResourceRequ
 		return
 	}
 
-	diags = resp.State.Set(ctx, &data)
+	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
 }
 

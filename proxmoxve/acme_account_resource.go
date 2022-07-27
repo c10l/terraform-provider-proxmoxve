@@ -98,7 +98,8 @@ func (r acmeAccountResource) Create(ctx context.Context, req tfsdk.CreateResourc
 
 	tflog.Trace(ctx, "created acme_account")
 
-	diags = resp.State.Set(ctx, &data)
+	data.ID = data.Name
+	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
 }
 
@@ -155,7 +156,7 @@ func (r acmeAccountResource) Read(ctx context.Context, req tfsdk.ReadResourceReq
 		return
 	}
 
-	diags = resp.State.Set(ctx, &data)
+	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
 }
 
@@ -186,7 +187,7 @@ func (r acmeAccountResource) Update(ctx context.Context, req tfsdk.UpdateResourc
 		return
 	}
 
-	diags = resp.State.Set(ctx, &data)
+	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
 }
 

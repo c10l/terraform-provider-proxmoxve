@@ -72,8 +72,8 @@ func (v versionDatasource) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), &version.Version)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("version"), &version.Version)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("repoid"), &version.RepoID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("release"), &version.Release)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), version.Version)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("version"), version.Version)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("repoid"), version.RepoID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("release"), version.Release)...)
 }

@@ -142,7 +142,7 @@ func (r storageBTRFSResource) Create(ctx context.Context, req tfsdk.CreateResour
 
 	tflog.Trace(ctx, "created storage_btrfs")
 
-	diags = resp.State.Set(ctx, &data)
+	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
 }
 
@@ -170,7 +170,7 @@ func (r storageBTRFSResource) Read(ctx context.Context, req tfsdk.ReadResourceRe
 		return
 	}
 
-	diags = resp.State.Set(ctx, &data)
+	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
 }
 
@@ -220,7 +220,7 @@ func (r storageBTRFSResource) Update(ctx context.Context, req tfsdk.UpdateResour
 
 	tflog.Trace(ctx, "updated storage_btrfs")
 
-	diags = resp.State.Set(ctx, &data)
+	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
 }
 

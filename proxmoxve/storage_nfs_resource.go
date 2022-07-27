@@ -162,7 +162,7 @@ func (r storageNFSResource) Create(ctx context.Context, req tfsdk.CreateResource
 
 	tflog.Trace(ctx, "created storage_nfs")
 
-	diags = resp.State.Set(ctx, &data)
+	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
 }
 
@@ -190,7 +190,7 @@ func (r storageNFSResource) Read(ctx context.Context, req tfsdk.ReadResourceRequ
 		return
 	}
 
-	diags = resp.State.Set(ctx, &data)
+	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
 }
 
@@ -243,7 +243,7 @@ func (r storageNFSResource) Update(ctx context.Context, req tfsdk.UpdateResource
 
 	tflog.Trace(ctx, "updated storage_nfs")
 
-	diags = resp.State.Set(ctx, &data)
+	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
 }
 
