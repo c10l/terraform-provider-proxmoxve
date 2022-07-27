@@ -5,6 +5,7 @@ NAME=proxmoxve
 BINARY=terraform-provider-${NAME}
 VERSION=0.0.1
 OS_ARCH=darwin_arm64
+TESTNAME?=.*
 
 default: install
 
@@ -34,4 +35,4 @@ test:
 	echo $(TEST) | xargs -t -n4 go test $(TESTARGS) -timeout=30s -parallel=4
 
 testacc:
-	TF_LOG_PROVIDER_PROXMOXVE=DEBUG TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 120m
+	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 120m -run "^$(TESTNAME)$$"
