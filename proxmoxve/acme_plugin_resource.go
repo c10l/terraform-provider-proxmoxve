@@ -150,7 +150,7 @@ func (r acmePluginResource) eventuallyGet(ctx context.Context, data *acmePluginR
 				accChan <- acc
 			}
 			var wait time.Duration
-			if elapsedTime <= 5*time.Second {
+			if elapsedTime < 5*time.Second {
 				wait = 1 * time.Second
 			} else {
 				wait = 5 * time.Second
