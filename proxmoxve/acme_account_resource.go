@@ -3,6 +3,7 @@ package proxmoxve
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -28,16 +29,16 @@ func (t acmeAccountResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, d
 				Computed: true,
 				Type:     types.StringType,
 			},
+			"name": {
+				Required:      true,
+				Type:          types.StringType,
+				PlanModifiers: []tfsdk.AttributePlanModifier{tfsdk.RequiresReplace()},
+			},
 			"contact": {
 				Required: true,
 				Type:     types.StringType,
 			},
 			"directory": {
-				Optional:      true,
-				Type:          types.StringType,
-				PlanModifiers: []tfsdk.AttributePlanModifier{tfsdk.RequiresReplace()},
-			},
-			"name": {
 				Optional:      true,
 				Type:          types.StringType,
 				PlanModifiers: []tfsdk.AttributePlanModifier{tfsdk.RequiresReplace()},
@@ -57,14 +58,14 @@ func (t acmeAccountResourceType) NewResource(ctx context.Context, in tfsdk.Provi
 }
 
 type acmeAccountResourceData struct {
-	Id types.String `tfsdk:"id"`
+	ID types.String `tfsdk:"id"`
 
 	// Required attributes
+	Name    types.String `tfsdk:"name"`
 	Contact types.String `tfsdk:"contact"`
 
 	// Optional attributes
 	Directory types.String `tfsdk:"directory"`
-	Name      types.String `tfsdk:"name"`
 	TOSurl    types.String `tfsdk:"tos_url"`
 }
 
@@ -94,41 +95,13 @@ func (r acmeAccountResource) Create(ctx context.Context, req tfsdk.CreateResourc
 		return
 	}
 
-	r.getCreatedWithTimeout(ctx, &data, 1*time.Second)
+	r.eventuallyGet(ctx, &data, 1*time.Second)
 
 	tflog.Trace(ctx, "created acme_account")
 
 	data.ID = data.Name
 	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
-}
-
-func (r acmeAccountResource) getCreatedWithTimeout(ctx context.Context, data *acmeAccountResourceData, timeout time.Duration) (*account.ItemGetResponse, diag.Diagnostics) {
-	accChan := make(chan *account.ItemGetResponse, 1)
-	var err error
-
-	go func() {
-		var acc *account.ItemGetResponse
-		elapsedTime := 0 * time.Second
-		for {
-			acc, err = account.ItemGetRequest{Client: r.provider.rootClient, Name: data.Name.Value}.Get()
-			if err == nil {
-				accChan <- acc
-			}
-			time.Sleep(5 * time.Second)
-			elapsedTime += 5 * time.Second
-			fmt.Printf("Waiting for proxmoxve_acme_account.%s to be created... (%s)\n", data.Name.Value, elapsedTime)
-		}
-	}()
-
-	select {
-	case acc := <-accChan:
-		return acc, r.convertAPIGetResponseToTerraform(ctx, *acc, data)
-	case <-time.After(timeout):
-		diags := diag.Diagnostics{}
-		diags.AddError(fmt.Sprintf("Timed out reading acme_account after %s seconds", timeout), err.Error())
-		return nil, diags
-	}
 }
 
 func (r acmeAccountResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest, resp *tfsdk.ReadResourceResponse) {
@@ -139,22 +112,18 @@ func (r acmeAccountResource) Read(ctx context.Context, req tfsdk.ReadResourceReq
 		return
 	}
 
-	name := data.Name.Value
-	account, err := account.ItemGetRequest{Client: r.provider.rootClient, Name: name}.Get()
+	account, err := r.eventuallyGet(ctx, &data, 5*time.Second)
 	if err != nil {
-		// If resource has been deleted outside of Terraform, we remove it from the plan state so it can be re-created.
-		if strings.Contains(err.Error(), fmt.Sprintf("ACME account config file '%s' does not exist", name)) {
+		if strings.Contains(err.Error(), fmt.Sprintf("ACME account config file '%s' does not exist", data.Name.Value)) {
 			resp.State.RemoveResource(ctx)
 			return
+		} else {
+			resp.Diagnostics.AddError(fmt.Sprintf("error reading acme_account.%s", data.Name.Value), err.Error())
+			return
 		}
-		resp.Diagnostics.AddError("Error reading acme_account", err.Error())
-		return
 	}
 
-	resp.Diagnostics.Append(r.convertAPIGetResponseToTerraform(ctx, *account, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	r.convertAPIGetResponseToTerraform(ctx, *account, &data)
 
 	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
@@ -172,20 +141,17 @@ func (r acmeAccountResource) Update(ctx context.Context, req tfsdk.UpdateResourc
 	putReq.Contact = data.Contact.Value
 	_, err := putReq.Put()
 	if err != nil {
-		resp.Diagnostics.AddError("Error updating acme_account", err.Error())
+		resp.Diagnostics.AddError(fmt.Sprintf("error updating acme_account.%s", data.Name.Value), err.Error())
 		return
 	}
 
-	account, err := account.ItemGetRequest{Client: r.provider.client, Name: data.Name.Value}.Get()
+	account, err := r.eventuallyGet(ctx, &data, 5*time.Second)
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading acme_account", err.Error())
+		resp.Diagnostics.AddError(fmt.Sprintf("error reading acme_account.%s", data.Name.Value), err.Error())
 		return
 	}
 
-	resp.Diagnostics.Append(r.convertAPIGetResponseToTerraform(ctx, *account, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	r.convertAPIGetResponseToTerraform(ctx, *account, &data)
 
 	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
@@ -210,11 +176,46 @@ func (r acmeAccountResource) ImportState(ctx context.Context, req tfsdk.ImportRe
 	tfsdk.ResourceImportStatePassthroughID(ctx, path.Root("name"), req, resp)
 }
 
-func (r acmeAccountResource) convertAPIGetResponseToTerraform(ctx context.Context, apiData account.ItemGetResponse, tfData *acmeAccountResourceData) diag.Diagnostics {
+func (r acmeAccountResource) convertAPIGetResponseToTerraform(ctx context.Context, apiData account.ItemGetResponse, tfData *acmeAccountResourceData) {
+	tfData.ID = types.String{Value: tfData.Name.Value}
 	tfData.Contact = types.String{Value: strings.TrimPrefix(apiData.Account.Contact[0], "mailto:")}
 	tfData.Directory = types.String{Value: apiData.Directory}
 	tfData.TOSurl = types.String{Value: apiData.TOS}
-	tfData.Id = types.String{Value: tfData.Name.Value}
+}
 
-	return nil
+func (r acmeAccountResource) eventuallyGet(ctx context.Context, data *acmeAccountResourceData, timeout time.Duration) (*account.ItemGetResponse, error) {
+	accChan := make(chan *account.ItemGetResponse, 1)
+	var err error
+
+	go func() {
+		var acc *account.ItemGetResponse
+		elapsedTime := 0 * time.Second
+		for {
+			acc, err = account.ItemGetRequest{Client: r.provider.rootClient, Name: data.Name.Value}.Get()
+			if err == nil &&
+				acc.Directory != "" &&
+				acc.Location != "" &&
+				acc.TOS != "" &&
+				acc.Account.Contact != nil {
+				accChan <- acc
+			}
+			var wait time.Duration
+			if elapsedTime <= 5*time.Second {
+				wait = 1 * time.Second
+			} else {
+				wait = 5 * time.Second
+			}
+			time.Sleep(wait)
+			elapsedTime += wait
+			fmt.Fprintf(os.Stderr, "Waiting for proxmoxve_acme_account.%s to be created... (%s)\n", data.Name.Value, elapsedTime)
+		}
+	}()
+
+	select {
+	case acc := <-accChan:
+		r.convertAPIGetResponseToTerraform(ctx, *acc, data)
+		return acc, nil
+	case <-time.After(timeout):
+		return nil, err
+	}
 }

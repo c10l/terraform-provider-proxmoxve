@@ -15,7 +15,7 @@ func TestACMEPluginResource(t *testing.T) {
 			{
 				Config: testAccACMEPluginResourceConfig(),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("proxmoxve_acme_plugin.test", "id", "pmve_acme_plugin_test"),
+					resource.TestCheckResourceAttr("proxmoxve_acme_plugin.test", "name", "pmve_acme_plugin_test"),
 					resource.TestCheckResourceAttr("proxmoxve_acme_plugin.test", "type", "standalone"),
 				),
 			},
@@ -44,7 +44,7 @@ func TestACMEPluginResource(t *testing.T) {
 func testAccACMEPluginResourceConfig() string {
 	return `
 		resource "proxmoxve_acme_plugin" "test" {
-			id   = "pmve_acme_plugin_test"
+			name = "pmve_acme_plugin_test"
 			type = "standalone"
 		}
 	`

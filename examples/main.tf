@@ -41,7 +41,7 @@ resource "proxmoxve_acme_account" "test" {
 }
 
 resource "proxmoxve_acme_plugin" "test" {
-  id   = "pmve_acme_plugin_test"
+  name = "pmve_acme_plugin_test"
   type = "standalone"
 }
 

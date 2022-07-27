@@ -3,6 +3,7 @@ package proxmoxve
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -25,6 +26,10 @@ func (t acmePluginResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, di
 	return tfsdk.Schema{
 		Attributes: map[string]tfsdk.Attribute{
 			"id": {
+				Computed: true,
+				Type:     types.StringType,
+			},
+			"name": {
 				Required: true,
 				Type:     types.StringType,
 			},
@@ -42,8 +47,10 @@ func (t acmePluginResourceType) NewResource(ctx context.Context, in tfsdk.Provid
 }
 
 type acmePluginResourceData struct {
+	ID types.String `tfsdk:"id"`
+
 	// Required attributes
-	ID   types.String `tfsdk:"id"`
+	Name types.String `tfsdk:"name"`
 	Type types.String `tfsdk:"type"`
 
 	// Optional attributes
@@ -61,47 +68,19 @@ func (r acmePluginResource) Create(ctx context.Context, req tfsdk.CreateResource
 		return
 	}
 
-	postReq := plugins.PostRequest{Client: r.provider.rootClient, ID: data.ID.Value, Type: data.Type.Value}
+	postReq := plugins.PostRequest{Client: r.provider.rootClient, ID: data.Name.Value, Type: data.Type.Value}
 	err := postReq.Post()
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating acme_plugin", err.Error())
 		return
 	}
 
-	r.getCreatedWithTimeout(ctx, &data, 1*time.Second)
+	r.eventuallyGet(ctx, &data, 5*time.Second)
 
 	tflog.Trace(ctx, "created acme_plugin")
 
 	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
-}
-
-func (r acmePluginResource) getCreatedWithTimeout(ctx context.Context, data *acmePluginResourceData, timeout time.Duration) (*plugins.ItemGetResponse, diag.Diagnostics) {
-	accChan := make(chan *plugins.ItemGetResponse, 1)
-	var err error
-
-	go func() {
-		var acc *plugins.ItemGetResponse
-		elapsedTime := 0 * time.Second
-		for {
-			acc, err = plugins.ItemGetRequest{Client: r.provider.rootClient, ID: data.ID.Value}.Get()
-			if err == nil {
-				accChan <- acc
-			}
-			time.Sleep(5 * time.Second)
-			elapsedTime += 5 * time.Second
-			fmt.Printf("Waiting for proxmoxve_acme_plugins.%s to be created... (%s)\n", data.ID.Value, elapsedTime)
-		}
-	}()
-
-	select {
-	case acc := <-accChan:
-		return acc, r.convertAPIGetResponseToTerraform(ctx, *acc, data)
-	case <-time.After(timeout):
-		diags := diag.Diagnostics{}
-		diags.AddError(fmt.Sprintf("Timed out reading acme_plugins after %s seconds", timeout), err.Error())
-		return nil, diags
-	}
 }
 
 func (r acmePluginResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest, resp *tfsdk.ReadResourceResponse) {
@@ -112,21 +91,18 @@ func (r acmePluginResource) Read(ctx context.Context, req tfsdk.ReadResourceRequ
 		return
 	}
 
-	plugin, err := plugins.ItemGetRequest{Client: r.provider.client, ID: data.ID.Value}.Get()
+	plugin, err := r.eventuallyGet(ctx, &data, 5*time.Second)
 	if err != nil {
-		// If resource has been deleted outside of Terraform, we remove it from the plan state so it can be re-created.
 		if strings.Contains(err.Error(), fmt.Sprintf("ACME plugin '%s' does not exist", data.ID.Value)) {
 			resp.State.RemoveResource(ctx)
 			return
+		} else {
+			resp.Diagnostics.AddError(fmt.Sprintf("error reading acme_plugin.%s", data.Name.Value), err.Error())
+			return
 		}
-		resp.Diagnostics.AddError("Error reading acme_plugin", err.Error())
-		return
 	}
 
-	resp.Diagnostics.Append(r.convertAPIGetResponseToTerraform(ctx, *plugin, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	r.convertAPIGetResponseToTerraform(ctx, *plugin, &data)
 
 	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
@@ -153,12 +129,43 @@ func (r acmePluginResource) Delete(ctx context.Context, req tfsdk.DeleteResource
 
 func (r acmePluginResource) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
 	// FIXME: Import is not importing `type` argument
-	tfsdk.ResourceImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	tfsdk.ResourceImportStatePassthroughID(ctx, path.Root("name"), req, resp)
 }
 
-func (r acmePluginResource) convertAPIGetResponseToTerraform(ctx context.Context, apiData plugins.ItemGetResponse, tfData *acmePluginResourceData) diag.Diagnostics {
-	tfData.ID = types.String{Value: tfData.ID.Value}
-	tfData.Type = types.String{Value: tfData.Type.Value}
+func (r acmePluginResource) convertAPIGetResponseToTerraform(ctx context.Context, apiData plugins.ItemGetResponse, tfData *acmePluginResourceData) {
+	tfData.ID = types.String{Value: tfData.Name.Value}
+	tfData.Type = types.String{Value: apiData.Type}
+}
 
-	return nil
+func (r acmePluginResource) eventuallyGet(ctx context.Context, data *acmePluginResourceData, timeout time.Duration) (*plugins.ItemGetResponse, error) {
+	accChan := make(chan *plugins.ItemGetResponse, 1)
+	var err error
+
+	go func() {
+		var acc *plugins.ItemGetResponse
+		elapsedTime := 0 * time.Second
+		for {
+			acc, err = plugins.ItemGetRequest{Client: r.provider.rootClient, ID: data.Name.Value}.Get()
+			if err == nil {
+				accChan <- acc
+			}
+			var wait time.Duration
+			if elapsedTime <= 5*time.Second {
+				wait = 1 * time.Second
+			} else {
+				wait = 5 * time.Second
+			}
+			time.Sleep(wait)
+			elapsedTime += wait
+			fmt.Fprintf(os.Stderr, "Waiting for proxmoxve_acme_plugins.%s to be created... (%s)\n", data.Name.Value, elapsedTime)
+		}
+	}()
+
+	select {
+	case acc := <-accChan:
+		r.convertAPIGetResponseToTerraform(ctx, *acc, data)
+		return acc, nil
+	case <-time.After(timeout):
+		return nil, err
+	}
 }
