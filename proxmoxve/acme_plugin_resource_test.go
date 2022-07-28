@@ -1,6 +1,8 @@
 package proxmoxve
 
 import (
+	"encoding/base64"
+	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -13,10 +15,12 @@ func TestACMEPluginResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccACMEPluginResourceConfig(),
+				Config: testAccACMEPluginResourceConfig("pmve_acme_plugin_test", "foobar"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("proxmoxve_acme_plugin.test", "name", "pmve_acme_plugin_test"),
-					resource.TestCheckResourceAttr("proxmoxve_acme_plugin.test", "type", "standalone"),
+					resource.TestCheckResourceAttr("proxmoxve_acme_plugin.test", "type", "dns"),
+					resource.TestCheckResourceAttr("proxmoxve_acme_plugin.test", "data", base64.StdEncoding.EncodeToString([]byte("foobar"))),
+					resource.TestCheckTypeSetElemAttr("proxmoxve_acme_plugin.test", "nodes.*", "foobar"),
 				),
 			},
 			// ImportState testing
@@ -27,13 +31,11 @@ func TestACMEPluginResource(t *testing.T) {
 			},
 			// // Update and Read testing
 			// {
-			// 	Config: testAccACMEPluginResourceConfig(),
+			// 	Config: testAccACMEPluginResourceConfig("pmve_acme_plugin_test_update", "bazquux"),
 			// 	Check: resource.ComposeAggregateTestCheckFunc(
-			// 		resource.TestCheckResourceAttr("proxmoxve_acme_plugin.test", "id", "terraform_test_plugin_update"),
-			// 		resource.TestCheckResourceAttr("proxmoxve_acme_plugin.test", "name", "terraform_test_plugin_update"),
-			// 		resource.TestCheckResourceAttr("proxmoxve_acme_plugin.test", "contact", "foo@barbaz.com"),
-			// 		resource.TestCheckResourceAttr("proxmoxve_acme_plugin.test", "directory", "https://127.0.0.1:14000/dir"),
-			// 		resource.TestCheckResourceAttr("proxmoxve_acme_plugin.test", "tos_url", "foobar"),
+			// 		resource.TestCheckResourceAttr("proxmoxve_acme_plugin.test", "id", "pmve_acme_plugin_test_update"),
+			// 		resource.TestCheckResourceAttr("proxmoxve_acme_plugin.test", "name", "pmve_acme_plugin_test_update"),
+			// 		resource.TestCheckResourceAttr("proxmoxve_acme_plugin.test", "data", base64.StdEncoding.EncodeToString([]byte("bazquux"))),
 			// 	),
 			// },
 			// Delete testing automatically occurs in TestCase
@@ -41,11 +43,14 @@ func TestACMEPluginResource(t *testing.T) {
 	})
 }
 
-func testAccACMEPluginResourceConfig() string {
-	return `
+func testAccACMEPluginResourceConfig(name, data string) string {
+	return fmt.Sprintf(`
 		resource "proxmoxve_acme_plugin" "test" {
-			name = "pmve_acme_plugin_test"
-			type = "standalone"
+			name  = "%s"
+			type  = "dns"
+			data  = base64encode("%s")
+			api   = "zone"
+			nodes = ["foobar"]
 		}
-	`
+	`, name, data)
 }

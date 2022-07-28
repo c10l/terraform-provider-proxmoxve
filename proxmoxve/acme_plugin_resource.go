@@ -2,12 +2,16 @@ package proxmoxve
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/c10l/proxmoxve-client-go/api/cluster/acme/plugins"
+	"github.com/c10l/proxmoxve-client-go/helpers"
+	pvetypes "github.com/c10l/proxmoxve-client-go/helpers/types"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -30,12 +34,32 @@ func (t acmePluginResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, di
 				Type:     types.StringType,
 			},
 			"name": {
-				Required: true,
-				Type:     types.StringType,
+				Required:      true,
+				Type:          types.StringType,
+				PlanModifiers: []tfsdk.AttributePlanModifier{tfsdk.RequiresReplace()},
 			},
 			"type": {
-				Required: true,
+				Required:      true,
+				Type:          types.StringType,
+				PlanModifiers: []tfsdk.AttributePlanModifier{tfsdk.RequiresReplace()},
+			},
+			"api": {
+				Optional: true,
 				Type:     types.StringType,
+			},
+			"data": {
+				Optional: true,
+				Type:     types.StringType,
+			},
+			"disable": {
+				Optional: true,
+				Computed: true,
+				Type:     types.BoolType,
+			},
+			"nodes": {
+				Type:     types.SetType{ElemType: types.StringType},
+				Optional: true,
+				Computed: true,
 			},
 		},
 	}, nil
@@ -54,6 +78,10 @@ type acmePluginResourceData struct {
 	Type types.String `tfsdk:"type"`
 
 	// Optional attributes
+	API     types.String `tfsdk:"api"`
+	Data    types.String `tfsdk:"data"`
+	Disable types.Bool   `tfsdk:"disable"`
+	Nodes   types.Set    `tfsdk:"nodes"`
 }
 
 type acmePluginResource struct {
@@ -69,6 +97,21 @@ func (r acmePluginResource) Create(ctx context.Context, req tfsdk.CreateResource
 	}
 
 	postReq := plugins.PostRequest{Client: r.provider.rootClient, ID: data.Name.Value, Type: data.Type.Value}
+	if !data.API.Null {
+		postReq.API = &data.API.Value
+	}
+	if !data.Data.Null {
+		postReq.Data = &data.Data.Value
+	}
+	if !data.Disable.Null {
+		postReq.Disable = helpers.PtrTo(pvetypes.PVEBool(data.Disable.Value))
+	}
+	if !data.Nodes.Null {
+		if postReq.Nodes == nil {
+			postReq.Nodes = &[]string{}
+		}
+		resp.Diagnostics.Append(data.Nodes.ElementsAs(ctx, postReq.Nodes, false)...)
+	}
 	err := postReq.Post()
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating acme_plugin", err.Error())
@@ -128,13 +171,29 @@ func (r acmePluginResource) Delete(ctx context.Context, req tfsdk.DeleteResource
 }
 
 func (r acmePluginResource) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
-	// FIXME: Import is not importing `type` argument
 	tfsdk.ResourceImportStatePassthroughID(ctx, path.Root("name"), req, resp)
 }
 
 func (r acmePluginResource) convertAPIGetResponseToTerraform(ctx context.Context, apiData plugins.ItemGetResponse, tfData *acmePluginResourceData) {
+	tfData.Nodes.ElemType = types.StringType
+	tfData.Nodes.Elems = []attr.Value{}
+	for i, j := range strings.Split(*apiData.Nodes, ",") {
+		tfData.Nodes.Elems = append(tfData.Nodes.Elems, types.String{Value: j})
+		if i == 0 {
+			tfData.Nodes.Null = false
+		}
+	}
+
 	tfData.ID = types.String{Value: tfData.Name.Value}
 	tfData.Type = types.String{Value: apiData.Type}
+	if apiData.API != nil {
+		tfData.API = types.String{Value: *apiData.API}
+	}
+	if apiData.Data != nil {
+		base64Data := base64.StdEncoding.EncodeToString([]byte(*apiData.Data))
+		tfData.Data = types.String{Value: base64Data}
+	}
+	tfData.Disable = types.Bool{Value: bool(apiData.Disable)}
 }
 
 func (r acmePluginResource) eventuallyGet(ctx context.Context, data *acmePluginResourceData, timeout time.Duration) (*plugins.ItemGetResponse, error) {

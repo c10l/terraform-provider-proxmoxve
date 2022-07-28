@@ -42,7 +42,9 @@ resource "proxmoxve_acme_account" "test" {
 
 resource "proxmoxve_acme_plugin" "test" {
   name = "pmve_acme_plugin_test"
-  type = "standalone"
+  type = "dns"
+  api  = "lua"
+  data = base64encode("foobar")
 }
 
 output "version" {
