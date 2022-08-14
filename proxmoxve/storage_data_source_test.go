@@ -23,13 +23,9 @@ func TestAccDataSourceStorage(t *testing.T) {
 					resource.TestCheckResourceAttr("data.proxmoxve_storage.test", "nodes.#", "0"),
 					resource.TestCheckResourceAttr("data.proxmoxve_storage.test", "enabled", "true"),
 					resource.TestCheckResourceAttr("data.proxmoxve_storage.test", "preallocation", ""),
-					resource.TestCheckResourceAttr("data.proxmoxve_storage.test", "prune_backups", "keep-all=1"),
 
 					resource.TestCheckTypeSetElemAttr("data.proxmoxve_storage.test", "content.*", "backup"),
-					resource.TestCheckTypeSetElemAttr("data.proxmoxve_storage.test", "content.*", "images"),
 					resource.TestCheckTypeSetElemAttr("data.proxmoxve_storage.test", "content.*", "iso"),
-					resource.TestCheckTypeSetElemAttr("data.proxmoxve_storage.test", "content.*", "rootdir"),
-					resource.TestCheckTypeSetElemAttr("data.proxmoxve_storage.test", "content.*", "snippets"),
 					resource.TestCheckTypeSetElemAttr("data.proxmoxve_storage.test", "content.*", "vztmpl"),
 				),
 			},
