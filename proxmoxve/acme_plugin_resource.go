@@ -107,9 +107,7 @@ func (r acmePluginResource) Create(ctx context.Context, req tfsdk.CreateResource
 		postReq.Disable = helpers.PtrTo(pvetypes.PVEBool(data.Disable.Value))
 	}
 	if !data.Nodes.Null {
-		if postReq.Nodes == nil {
-			postReq.Nodes = &[]string{}
-		}
+		postReq.Nodes = &[]string{}
 		resp.Diagnostics.Append(data.Nodes.ElementsAs(ctx, postReq.Nodes, false)...)
 	}
 	err := postReq.Post()
@@ -152,7 +150,58 @@ func (r acmePluginResource) Read(ctx context.Context, req tfsdk.ReadResourceRequ
 }
 
 func (r acmePluginResource) Update(ctx context.Context, req tfsdk.UpdateResourceRequest, resp *tfsdk.UpdateResourceResponse) {
-	// TODO: implement
+	var config acmePluginResourceData
+	diags := req.Config.Get(ctx, &config)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	putReq := plugins.ItemPutRequest{Client: r.provider.rootClient, ID: config.Name.Value}
+	delete := []string{}
+	if config.API.Null {
+		delete = append(delete, "api")
+	} else {
+		putReq.API = helpers.PtrTo(config.API.Value)
+	}
+	if config.Data.Null {
+		delete = append(delete, "data")
+	} else {
+		putReq.Data = helpers.PtrTo(config.Data.Value)
+	}
+	if config.Disable.Null {
+		delete = append(delete, "disable")
+	} else {
+		putReq.Disable = helpers.PtrTo(pvetypes.PVEBool(config.Disable.Value))
+	}
+	if config.Nodes.Null {
+		delete = append(delete, "nodes")
+	} else {
+		putReq.Nodes = &[]string{}
+		resp.Diagnostics.Append(config.Nodes.ElementsAs(ctx, putReq.Nodes, false)...)
+	}
+	putReq.Delete = helpers.PtrTo(strings.Join(delete, ","))
+	if err := putReq.Put(); err != nil {
+		resp.Diagnostics.AddError(fmt.Sprintf("error updating acme_account.%s", config.Name.Value), err.Error())
+		return
+	}
+
+	state := acmePluginResourceData{}
+	plugin, err := r.eventuallyGet(ctx, &state, 5*time.Second)
+	if err != nil {
+		if strings.Contains(err.Error(), fmt.Sprintf("ACME plugin '%s' does not exist", state.ID.Value)) {
+			resp.State.RemoveResource(ctx)
+			return
+		} else {
+			resp.Diagnostics.AddError(fmt.Sprintf("error reading acme_plugin.%s", state.Name.Value), err.Error())
+			return
+		}
+	}
+
+	r.convertAPIGetResponseToTerraform(ctx, *plugin, &state)
+
+	diags = resp.State.Set(ctx, state)
+	resp.Diagnostics.Append(diags...)
 }
 
 func (r acmePluginResource) Delete(ctx context.Context, req tfsdk.DeleteResourceRequest, resp *tfsdk.DeleteResourceResponse) {
@@ -175,12 +224,14 @@ func (r acmePluginResource) ImportState(ctx context.Context, req tfsdk.ImportRes
 }
 
 func (r acmePluginResource) convertAPIGetResponseToTerraform(ctx context.Context, apiData plugins.ItemGetResponse, tfData *acmePluginResourceData) {
-	tfData.Nodes.ElemType = types.StringType
-	tfData.Nodes.Elems = []attr.Value{}
-	for i, j := range strings.Split(*apiData.Nodes, ",") {
-		tfData.Nodes.Elems = append(tfData.Nodes.Elems, types.String{Value: j})
-		if i == 0 {
-			tfData.Nodes.Null = false
+	if apiData.Nodes != nil {
+		tfData.Nodes.ElemType = types.StringType
+		tfData.Nodes.Elems = []attr.Value{}
+		for i, j := range strings.Split(*apiData.Nodes, ",") {
+			tfData.Nodes.Elems = append(tfData.Nodes.Elems, types.String{Value: j})
+			if i == 0 {
+				tfData.Nodes.Null = false
+			}
 		}
 	}
 
