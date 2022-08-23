@@ -15,8 +15,8 @@ func TestAccDataSourceVersion(t *testing.T) {
 			{
 				Config: testAccDataSourceVersionConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.proxmoxve_version.test", "version", "7.2-3"),
-					resource.TestCheckResourceAttr("data.proxmoxve_version.test", "release", "7.2"),
+					resource.TestCheckResourceAttrWith("data.proxmoxve_version.test", "version", testAccRegexpMatch(`7\.\d+-\d+`)),
+					resource.TestCheckResourceAttrWith("data.proxmoxve_version.test", "release", testAccRegexpMatch(`7\.\d+`)),
 				),
 			},
 		},
