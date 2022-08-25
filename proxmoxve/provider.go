@@ -181,11 +181,12 @@ func getTokenClient(baseURL string, insecure bool, tokenID, tokenSecret types.St
 // GetResources - Defines provider resources
 func (p *provider) GetResources(_ context.Context) (map[string]tfsdk.ResourceType, diag.Diagnostics) {
 	return map[string]tfsdk.ResourceType{
-		"proxmoxve_storage_dir":   storageDirResourceType{},
-		"proxmoxve_storage_nfs":   storageNFSResourceType{},
-		"proxmoxve_storage_btrfs": storageBTRFSResourceType{},
-		"proxmoxve_acme_account":  acmeAccountResourceType{},
-		"proxmoxve_acme_plugin":   acmePluginResourceType{},
+		"proxmoxve_storage_dir":    storageDirResourceType{},
+		"proxmoxve_storage_nfs":    storageNFSResourceType{},
+		"proxmoxve_storage_btrfs":  storageBTRFSResourceType{},
+		"proxmoxve_acme_account":   acmeAccountResourceType{},
+		"proxmoxve_acme_plugin":    acmePluginResourceType{},
+		"proxmoxve_firewall_alias": firewallAliasResourceType{},
 	}, nil
 }
 
