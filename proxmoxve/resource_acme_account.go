@@ -2,6 +2,7 @@ package proxmoxve
 
 import (
 	"context"
+	"crypto/md5"
 	"fmt"
 	"os"
 	"strings"
@@ -99,7 +100,12 @@ func (r acmeAccountResource) Create(ctx context.Context, req tfsdk.CreateResourc
 
 	tflog.Trace(ctx, "created acme_account")
 
-	data.ID = data.Name
+	// ID is the MD5 sum of the immutable attributes
+	idString := []byte(data.Name.Value + data.Directory.Value + data.TOSurl.Value)
+	idMD5 := md5.Sum(idString)
+	id := fmt.Sprintf("%x", idMD5)
+
+	data.ID = types.String{Value: id}
 	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
 }
@@ -145,14 +151,6 @@ func (r acmeAccountResource) Update(ctx context.Context, req tfsdk.UpdateResourc
 		return
 	}
 
-	account, err := r.eventuallyGet(ctx, &data, 5*time.Second)
-	if err != nil {
-		resp.Diagnostics.AddError(fmt.Sprintf("error reading acme_account.%s", data.Name.Value), err.Error())
-		return
-	}
-
-	r.convertAPIGetResponseToTerraform(ctx, *account, &data)
-
 	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
 }
@@ -177,7 +175,6 @@ func (r acmeAccountResource) ImportState(ctx context.Context, req tfsdk.ImportRe
 }
 
 func (r acmeAccountResource) convertAPIGetResponseToTerraform(ctx context.Context, apiData account.ItemGetResponse, tfData *acmeAccountResourceData) {
-	tfData.ID = types.String{Value: tfData.Name.Value}
 	tfData.Contact = types.String{Value: strings.TrimPrefix(apiData.Account.Contact[0], "mailto:")}
 	tfData.Directory = types.String{Value: apiData.Directory}
 	tfData.TOSurl = types.String{Value: apiData.TOS}
@@ -207,7 +204,7 @@ func (r acmeAccountResource) eventuallyGet(ctx context.Context, data *acmeAccoun
 			}
 			time.Sleep(wait)
 			elapsedTime += wait
-			fmt.Fprintf(os.Stderr, "Waiting for proxmoxve_acme_account.%s to be created... (%s)\n", data.Name.Value, elapsedTime)
+			fmt.Fprintf(os.Stderr, "Waiting for proxmoxve_acme_account.%s to converge... (%s)\n", data.Name.Value, elapsedTime)
 		}
 	}()
 
