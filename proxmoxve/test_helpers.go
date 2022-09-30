@@ -14,6 +14,6 @@ func testAccRegexpMatch(regex string) func(string) error {
 		if match {
 			return nil
 		}
-		return fmt.Errorf("Expected %s, got %s", regex, v)
+		return fmt.Errorf("expected %s, got %s", regex, v)
 	}
 }
