@@ -2,7 +2,6 @@ package proxmoxve
 
 import (
 	"context"
-	"crypto/md5"
 	"fmt"
 	"os"
 	"strings"
@@ -100,12 +99,7 @@ func (r acmeAccountResource) Create(ctx context.Context, req tfsdk.CreateResourc
 
 	tflog.Trace(ctx, "created acme_account")
 
-	// ID is the MD5 sum of the immutable attributes
-	idString := []byte(data.Name.Value + data.Directory.Value + data.TOSurl.Value)
-	idMD5 := md5.Sum(idString)
-	id := fmt.Sprintf("%x", idMD5)
-
-	data.ID = types.String{Value: id}
+	data.ID = data.Name
 	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
 }
@@ -175,6 +169,7 @@ func (r acmeAccountResource) ImportState(ctx context.Context, req tfsdk.ImportRe
 }
 
 func (r acmeAccountResource) convertAPIGetResponseToTerraform(ctx context.Context, apiData account.ItemGetResponse, tfData *acmeAccountResourceData) {
+	tfData.ID = types.String{Value: tfData.Name.Value}
 	tfData.Contact = types.String{Value: strings.TrimPrefix(apiData.Account.Contact[0], "mailto:")}
 	tfData.Directory = types.String{Value: apiData.Directory}
 	tfData.TOSurl = types.String{Value: apiData.TOS}
