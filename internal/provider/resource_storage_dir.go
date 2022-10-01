@@ -1,4 +1,4 @@
-package proxmoxve
+package provider
 
 import (
 	"context"
@@ -16,13 +16,13 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ tfsdk.ResourceType = storageBTRFSResourceType{}
-var _ tfsdk.Resource = storageBTRFSResource{}
-var _ tfsdk.ResourceWithImportState = storageBTRFSResource{}
+var _ tfsdk.ResourceType = storageDirResourceType{}
+var _ tfsdk.Resource = storageDirResource{}
+var _ tfsdk.ResourceWithImportState = storageDirResource{}
 
-type storageBTRFSResourceType struct{}
+type storageDirResourceType struct{}
 
-func (t storageBTRFSResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func (t storageDirResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		Attributes: map[string]tfsdk.Attribute{
 			"id": {
@@ -52,6 +52,11 @@ func (t storageBTRFSResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, 
 				Optional: true,
 				Computed: true,
 			},
+			"shared": {
+				Type:     types.BoolType,
+				Optional: true,
+				Computed: true,
+			},
 			"preallocation": {
 				Type:     types.StringType,
 				Optional: true,
@@ -69,12 +74,12 @@ func (t storageBTRFSResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, 
 	}, nil
 }
 
-func (t storageBTRFSResourceType) NewResource(ctx context.Context, in tfsdk.Provider) (tfsdk.Resource, diag.Diagnostics) {
+func (t storageDirResourceType) NewResource(ctx context.Context, in tfsdk.Provider) (tfsdk.Resource, diag.Diagnostics) {
 	provider, diags := convertProviderType(in)
-	return storageBTRFSResource{provider: provider}, diags
+	return storageDirResource{provider: provider}, diags
 }
 
-type storageBTRFSResourceData struct {
+type storageDirResourceData struct {
 	ID types.String `tfsdk:"id"`
 
 	// Required attributes
@@ -85,6 +90,7 @@ type storageBTRFSResourceData struct {
 	Content       types.Set    `tfsdk:"content"`
 	Nodes         types.Set    `tfsdk:"nodes"`
 	Disable       types.Bool   `tfsdk:"disable"`
+	Shared        types.Bool   `tfsdk:"shared"`
 	Preallocation types.String `tfsdk:"preallocation"`
 
 	// Computed attributes
@@ -92,19 +98,19 @@ type storageBTRFSResourceData struct {
 	PruneBackups types.String `tfsdk:"prune_backups"`
 }
 
-type storageBTRFSResource struct {
+type storageDirResource struct {
 	provider provider
 }
 
-func (r storageBTRFSResource) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
-	var data storageBTRFSResourceData
+func (r storageDirResource) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
+	var data storageDirResourceData
 	diags := req.Config.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	postReq := storage.PostRequest{Client: r.provider.client, Storage: data.Name.Value, StorageType: storage.TypeBTRFS, DirPath: &data.Path.Value}
+	postReq := storage.PostRequest{Client: r.provider.client, Storage: data.Name.Value, StorageType: storage.TypeDir, DirPath: &data.Path.Value}
 	if !data.Content.Null {
 		if postReq.Content == nil {
 			postReq.Content = &[]string{}
@@ -120,18 +126,21 @@ func (r storageBTRFSResource) Create(ctx context.Context, req tfsdk.CreateResour
 	if !data.Disable.Null {
 		postReq.Disable = helpers.PtrTo(pvetypes.PVEBool(data.Disable.Value))
 	}
+	if !data.Shared.Null {
+		postReq.DirShared = helpers.PtrTo(pvetypes.PVEBool(data.Shared.Value))
+	}
 	if !data.Preallocation.Null {
 		postReq.Preallocation = &data.Preallocation.Value
 	}
 	_, err := postReq.Post()
 	if err != nil {
-		resp.Diagnostics.AddError("Error creating storage_btrfs", err.Error())
+		resp.Diagnostics.AddError("Error creating storage_dir", err.Error())
 		return
 	}
 
 	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Name.Value}.Get()
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading storage_btrfs", err.Error())
+		resp.Diagnostics.AddError("Error reading storage_dir", err.Error())
 		return
 	}
 
@@ -140,14 +149,14 @@ func (r storageBTRFSResource) Create(ctx context.Context, req tfsdk.CreateResour
 		return
 	}
 
-	tflog.Trace(ctx, "created storage_btrfs")
+	tflog.Trace(ctx, "created storage_dir")
 
 	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
 }
 
-func (r storageBTRFSResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest, resp *tfsdk.ReadResourceResponse) {
-	var data storageBTRFSResourceData
+func (r storageDirResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest, resp *tfsdk.ReadResourceResponse) {
+	var data storageDirResourceData
 	diags := req.State.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -161,7 +170,7 @@ func (r storageBTRFSResource) Read(ctx context.Context, req tfsdk.ReadResourceRe
 			resp.State.RemoveResource(ctx)
 			return
 		}
-		resp.Diagnostics.AddError("Error reading storage_btrfs", err.Error())
+		resp.Diagnostics.AddError("Error reading storage_dir", err.Error())
 		return
 	}
 
@@ -174,8 +183,8 @@ func (r storageBTRFSResource) Read(ctx context.Context, req tfsdk.ReadResourceRe
 	resp.Diagnostics.Append(diags...)
 }
 
-func (r storageBTRFSResource) Update(ctx context.Context, req tfsdk.UpdateResourceRequest, resp *tfsdk.UpdateResourceResponse) {
-	var data storageBTRFSResourceData
+func (r storageDirResource) Update(ctx context.Context, req tfsdk.UpdateResourceRequest, resp *tfsdk.UpdateResourceResponse) {
+	var data storageDirResourceData
 	diags := req.Config.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -198,18 +207,21 @@ func (r storageBTRFSResource) Update(ctx context.Context, req tfsdk.UpdateResour
 	if !data.Disable.Null {
 		putReq.Disable = helpers.PtrTo(pvetypes.PVEBool(data.Disable.Value))
 	}
+	if !data.Shared.Null {
+		putReq.Shared = helpers.PtrTo(pvetypes.PVEBool(data.Shared.Value))
+	}
 	if !data.Preallocation.Null {
 		putReq.Preallocation = &data.Preallocation.Value
 	}
 	_, err := putReq.Put()
 	if err != nil {
-		resp.Diagnostics.AddError("Error creating storage_btrfs", err.Error())
+		resp.Diagnostics.AddError("Error creating storage_dir", err.Error())
 		return
 	}
 
 	storage, err := storage.ItemGetRequest{Client: r.provider.client, Storage: data.Name.Value}.Get()
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading storage_btrfs", err.Error())
+		resp.Diagnostics.AddError("Error reading storage_dir", err.Error())
 		return
 	}
 
@@ -218,14 +230,14 @@ func (r storageBTRFSResource) Update(ctx context.Context, req tfsdk.UpdateResour
 		return
 	}
 
-	tflog.Trace(ctx, "updated storage_btrfs")
+	tflog.Trace(ctx, "updated storage_dir")
 
 	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
 }
 
-func (r storageBTRFSResource) Delete(ctx context.Context, req tfsdk.DeleteResourceRequest, resp *tfsdk.DeleteResourceResponse) {
-	var data storageBTRFSResourceData
+func (r storageDirResource) Delete(ctx context.Context, req tfsdk.DeleteResourceRequest, resp *tfsdk.DeleteResourceResponse) {
+	var data storageDirResourceData
 	diags := req.State.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 
@@ -235,16 +247,16 @@ func (r storageBTRFSResource) Delete(ctx context.Context, req tfsdk.DeleteResour
 
 	err := storage.ItemDeleteRequest{Client: r.provider.client, Storage: data.Name.Value}.Delete()
 	if err != nil {
-		resp.Diagnostics.AddError("Error deleting storage_btrfs", err.Error())
+		resp.Diagnostics.AddError("Error deleting storage_dir", err.Error())
 		return
 	}
 }
 
-func (r storageBTRFSResource) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
+func (r storageDirResource) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
 	tfsdk.ResourceImportStatePassthroughID(ctx, path.Root("name"), req, resp)
 }
 
-func (r storageBTRFSResource) convertAPIGetResponseToTerraform(ctx context.Context, apiData storage.ItemGetResponse, tfData *storageBTRFSResourceData) diag.Diagnostics {
+func (r storageDirResource) convertAPIGetResponseToTerraform(ctx context.Context, apiData storage.ItemGetResponse, tfData *storageDirResourceData) diag.Diagnostics {
 	var diags diag.Diagnostics
 	diags = append(diags, tfsdk.ValueFrom(ctx, apiData.Content, types.SetType{ElemType: types.StringType}, &tfData.Content)...)
 	diags = append(diags, tfsdk.ValueFrom(ctx, apiData.Nodes, types.SetType{ElemType: types.StringType}, &tfData.Nodes)...)
@@ -253,6 +265,7 @@ func (r storageBTRFSResource) convertAPIGetResponseToTerraform(ctx context.Conte
 	tfData.Name = types.String{Value: apiData.Storage}
 	tfData.Path = types.String{Value: apiData.Path}
 	tfData.PruneBackups = types.String{Value: apiData.PruneBackups}
+	tfData.Shared = types.Bool{Value: apiData.Shared}
 	tfData.Type = types.String{Value: apiData.Type}
 
 	tfData.Disable = types.Bool{Value: apiData.Disable}

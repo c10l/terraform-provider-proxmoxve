@@ -1,4 +1,4 @@
-package proxmoxve
+package provider
 
 import (
 	"encoding/base64"

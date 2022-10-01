@@ -4,7 +4,7 @@ import (
 	"context"
 	"flag"
 	"log"
-	"terraform-provider-proxmoxve/proxmoxve"
+	"terraform-provider-proxmoxve/internal/provider"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )
@@ -29,7 +29,7 @@ func main() {
 		Address: "github.com/c10l/proxmoxve",
 		Debug:   debug,
 	}
-	err := providerserver.Serve(context.Background(), proxmoxve.New, opts)
+	err := providerserver.Serve(context.Background(), provider.New, opts)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
