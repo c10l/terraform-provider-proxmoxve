@@ -18,15 +18,16 @@ type firewallRefsDatasourceType struct{}
 
 func (t firewallRefsDatasourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
-		MarkdownDescription: "",
+		MarkdownDescription: "Lists possible IPSet/Alias reference which are allowed in source/dest properties.",
 		Attributes: map[string]tfsdk.Attribute{
 			"id": {
 				Type:     types.StringType,
 				Computed: true,
 			},
 			"type": {
-				Type:     types.StringType,
-				Optional: true,
+				Type:                types.StringType,
+				Optional:            true,
+				MarkdownDescription: "Only list references of specified type. Accepted values: `alias`, `ipset`.",
 			},
 			"refs": {
 				Computed: true,
