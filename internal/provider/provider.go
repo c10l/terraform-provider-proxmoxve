@@ -2,28 +2,48 @@ package provider
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"strconv"
 
 	proxmox "github.com/c10l/proxmoxve-client-go/api"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func New() tfsdk.Provider {
-	return &provider{}
-}
+// Ensure ProxmoxVEProvider satisfies various provider interfaces.
+var _ provider.Provider = &ProxmoxVEProvider{}
+var _ provider.ProviderWithMetadata = &ProxmoxVEProvider{}
 
-type provider struct {
-	configured bool
+type ProxmoxVEProvider struct {
+	// version is set to the provider version on release, "dev" when the
+	// provider is built and ran locally, and "test" when running acceptance
+	// testing.
+	version    string
 	client     *proxmox.Client
 	rootClient *proxmox.Client
+	// configured bool
+}
+
+// Provider schema struct
+type ProxmoxVEProviderModel struct {
+	BaseURL      types.String `tfsdk:"base_url"`
+	TokenID      types.String `tfsdk:"token_id"`
+	Secret       types.String `tfsdk:"secret"`
+	RootPassword types.String `tfsdk:"root_password"`
+	TLSInsecure  types.Bool   `tfsdk:"tls_insecure"`
+}
+
+func (p *ProxmoxVEProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
+	resp.TypeName = "proxmoxve"
+	resp.Version = p.version
 }
 
 // GetSchema
-func (p *provider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func (p *ProxmoxVEProvider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		Attributes: map[string]tfsdk.Attribute{
 			"base_url": {
@@ -52,37 +72,26 @@ func (p *provider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics)
 	}, nil
 }
 
-// Provider schema struct
-type providerData struct {
-	BaseURL      types.String `tfsdk:"base_url"`
-	TokenID      types.String `tfsdk:"token_id"`
-	Secret       types.String `tfsdk:"secret"`
-	RootPassword types.String `tfsdk:"root_password"`
-	TLSInsecure  types.Bool   `tfsdk:"tls_insecure"`
-}
-
 // Configure -
-func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderRequest, resp *tfsdk.ConfigureProviderResponse) {
-	// Retrieve provider data from configuration
-	var config providerData
-	diags := req.Config.Get(ctx, &config)
-	resp.Diagnostics.Append(diags...)
+func (p *ProxmoxVEProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	var data ProxmoxVEProviderModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	var baseURL string
-	if config.BaseURL.Unknown {
+	if data.BaseURL.Unknown {
 		resp.Diagnostics.AddWarning(
 			"Unable to create client",
 			"Cannot use unknown value as URL",
 		)
 		return
 	}
-	if config.BaseURL.Null {
+	if data.BaseURL.Null {
 		baseURL = os.Getenv("PROXMOXVE_BASE_URL")
 	} else {
-		baseURL = config.BaseURL.Value
+		baseURL = data.BaseURL.Value
 	}
 	if baseURL == "" {
 		// Error vs warning - empty value must stop execution
@@ -94,7 +103,7 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 	}
 
 	var tlsInsecure bool
-	if config.TLSInsecure.Null {
+	if data.TLSInsecure.Null {
 		var err error
 		tlsInsecure, err = strconv.ParseBool(os.Getenv("PROXMOXVE_TLS_INSECURE"))
 		if err != nil {
@@ -104,22 +113,19 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 			)
 		}
 	} else {
-		tlsInsecure = config.TLSInsecure.Value
+		tlsInsecure = data.TLSInsecure.Value
 	}
 
-	tokenClient, tokenClientDiags := getTokenClient(baseURL, tlsInsecure, config.TokenID, config.Secret)
+	tokenClient, tokenClientDiags := getTokenClient(baseURL, tlsInsecure, data.TokenID, data.Secret)
 	resp.Diagnostics.Append(tokenClientDiags...)
 	p.client = tokenClient
 
-	rootClient, rootClientDiags := getRootClient(baseURL, tlsInsecure, config.RootPassword)
+	rootClient, rootClientDiags := getRootClient(baseURL, tlsInsecure, data.RootPassword)
 	resp.Diagnostics.Append(rootClientDiags...)
 	p.rootClient = rootClient
 
-	if diags.HasError() {
-		return
-	}
-
-	p.configured = true
+	resp.DataSourceData = tokenClient
+	resp.ResourceData = tokenClient
 }
 
 func getRootClient(baseURL string, insecure bool, rootPassword types.String) (*proxmox.Client, diag.Diagnostics) {
@@ -179,51 +185,59 @@ func getTokenClient(baseURL string, insecure bool, tokenID, tokenSecret types.St
 }
 
 // GetResources - Defines provider resources
-func (p *provider) GetResources(_ context.Context) (map[string]tfsdk.ResourceType, diag.Diagnostics) {
-	return map[string]tfsdk.ResourceType{
-		"proxmoxve_storage_dir":    storageDirResourceType{},
-		"proxmoxve_storage_nfs":    storageNFSResourceType{},
-		"proxmoxve_storage_btrfs":  storageBTRFSResourceType{},
-		"proxmoxve_acme_account":   acmeAccountResourceType{},
-		"proxmoxve_acme_plugin":    acmePluginResourceType{},
-		"proxmoxve_firewall_alias": firewallAliasResourceType{},
-	}, nil
+func (p *ProxmoxVEProvider) Resources(ctx context.Context) []func() resource.Resource {
+	return []func() resource.Resource{
+		// NewStorageDirResource,
+		// NewStorageNFSResource,
+		// NewStorageBTRFSResource,
+		// NewAcmeAccountResource,
+		// NewAcmePluginResource,
+		// NewFirewallAliasResource,
+	}
 }
 
 // GetDataSources - Defines provider data sources
-func (p *provider) GetDataSources(_ context.Context) (map[string]tfsdk.DataSourceType, diag.Diagnostics) {
-	return map[string]tfsdk.DataSourceType{
-		"proxmoxve_version":       versionDatasourceType{},
-		"proxmoxve_storage":       storageDatasourceType{},
-		"proxmoxve_firewall_refs": firewallRefsDatasourceType{},
-	}, nil
+func (p *ProxmoxVEProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
+	return []func() datasource.DataSource{
+		NewVersionDataSource,
+		// NewStorageDataSource,
+		// NewFirewallRefsDataSource,
+	}
 }
 
-// convertProviderType is a helper function for NewResource and NewDataSource
-// implementations to associate the concrete provider type. Alternatively,
-// this helper can be skipped and the provider type can be directly type
-// asserted (e.g. provider: in.(*provider)), however using this can prevent
-// potential panics.
-func convertProviderType(in tfsdk.Provider) (provider, diag.Diagnostics) {
-	var diags diag.Diagnostics
+// // convertProviderType is a helper function for NewResource and NewDataSource
+// // implementations to associate the concrete provider type. Alternatively,
+// // this helper can be skipped and the provider type can be directly type
+// // asserted (e.g. provider: in.(*provider)), however using this can prevent
+// // potential panics.
+// func convertProviderType(in tfsdk.Provider) (provider, diag.Diagnostics) {
+// 	var diags diag.Diagnostics
 
-	p, ok := in.(*provider)
+// 	p, ok := in.(*provider)
 
-	if !ok {
-		diags.AddError(
-			"Unexpected Provider Instance Type",
-			fmt.Sprintf("While creating the data source or resource, an unexpected provider type (%T) was received. This is always a bug in the provider code and should be reported to the provider developers.", p),
-		)
-		return provider{}, diags
+// 	if !ok {
+// 		diags.AddError(
+// 			"Unexpected Provider Instance Type",
+// 			fmt.Sprintf("While creating the data source or resource, an unexpected provider type (%T) was received. This is always a bug in the provider code and should be reported to the provider developers.", p),
+// 		)
+// 		return provider{}, diags
+// 	}
+
+// 	if p == nil {
+// 		diags.AddError(
+// 			"Unexpected Provider Instance Type",
+// 			"While creating the data source or resource, an unexpected empty provider instance was received. This is always a bug in the provider code and should be reported to the provider developers.",
+// 		)
+// 		return provider{}, diags
+// 	}
+
+// 	return *p, diags
+// }
+
+func New(version string) func() provider.Provider {
+	return func() provider.Provider {
+		return &ProxmoxVEProvider{
+			version: version,
+		}
 	}
-
-	if p == nil {
-		diags.AddError(
-			"Unexpected Provider Instance Type",
-			"While creating the data source or resource, an unexpected empty provider instance was received. This is always a bug in the provider code and should be reported to the provider developers.",
-		)
-		return provider{}, diags
-	}
-
-	return *p, diags
 }

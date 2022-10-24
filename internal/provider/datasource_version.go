@@ -2,19 +2,44 @@ package provider
 
 import (
 	"context"
+	"fmt"
 
+	proxmox "github.com/c10l/proxmoxve-client-go/api"
 	version "github.com/c10l/proxmoxve-client-go/api/version"
 
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type versionDatasourceType struct{}
+// Ensure provider defined types fully satisfy framework interfaces
+var _ datasource.DataSource = &VersionDataSource{}
+
+// NewVersionDataSource -
+func NewVersionDataSource() datasource.DataSource {
+	return &VersionDataSource{}
+}
+
+type VersionDataSource struct {
+	client *proxmox.Client
+}
+
+type VersionDataSourceModel struct {
+	ID      types.String `tfsdk:"id"`
+	Release types.String `tfsdk:"release"`
+	RepoID  types.String `tfsdk:"repoid"`
+	Version types.String `tfsdk:"version"`
+	Console types.String `tfsdk:"console"`
+}
+
+func (d *VersionDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_version"
+}
 
 // Version data source schema
-func (r versionDatasourceType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func (d *VersionDataSource) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		MarkdownDescription: "API version details, including some parts of the global datacenter config.",
 		Attributes: map[string]tfsdk.Attribute{
@@ -46,36 +71,38 @@ func (r versionDatasourceType) GetSchema(_ context.Context) (tfsdk.Schema, diag.
 	}, nil
 }
 
-type versionDatasource struct {
-	provider provider
-}
+func (d *VersionDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+	// Prevent panic if the provider has not been configured.
+	if req.ProviderData == nil {
+		return
+	}
 
-type VersionData struct {
-	ID      types.String `tfsdk:"id"`
-	Release types.String `tfsdk:"release"`
-	RepoID  types.String `tfsdk:"repoid"`
-	Version types.String `tfsdk:"version"`
-}
+	client, ok := req.ProviderData.(*proxmox.Client)
 
-// NewDataSource -
-func (v versionDatasourceType) NewDataSource(ctx context.Context, in tfsdk.Provider) (tfsdk.DataSource, diag.Diagnostics) {
-	provider, diags := convertProviderType(in)
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Data Source Configure Type",
+			fmt.Sprintf("Expected *proxmox.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+		)
 
-	return versionDatasource{
-		provider: provider,
-	}, diags
+		return
+	}
+
+	d.client = client
 }
 
 // Read -
-func (v versionDatasource) Read(ctx context.Context, req tfsdk.ReadDataSourceRequest, resp *tfsdk.ReadDataSourceResponse) {
-	var data VersionData
-	diags := req.Config.Get(ctx, &data)
-	resp.Diagnostics.Append(diags...)
+func (d *VersionDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var data VersionDataSourceModel
+
+	// Read Terraform configuration data into the model
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	version, err := version.GetRequest{Client: v.provider.client}.Do()
+	version, err := version.GetRequest{Client: d.client}.Do()
 	if err != nil {
 		resp.Diagnostics.AddError("Error retrieving version", err.Error())
 		return
