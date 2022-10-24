@@ -17,15 +17,15 @@ type storageDatasourceType struct{}
 
 func (t storageDatasourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
-		MarkdownDescription: "",
 		Attributes: map[string]tfsdk.Attribute{
 			"id": {
 				Type:     types.StringType,
 				Computed: true,
 			},
 			"name": {
-				Type:     types.StringType,
-				Required: true,
+				Type:                types.StringType,
+				Required:            true,
+				MarkdownDescription: "The storage identifier",
 			},
 			"type": {
 				Type:     types.StringType,

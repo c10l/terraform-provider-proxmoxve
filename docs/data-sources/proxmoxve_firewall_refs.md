@@ -17,7 +17,7 @@ Lists possible IPSet/Alias reference which are allowed in source/dest properties
 
 ### Optional
 
-- `type` (String) Only list references of specified type. Accepted values: `alias`, `ipset`.
+- `type` (String) Only list references of specified type. Accepted values: `alias`, `ipset`
 
 ### Read-Only
 

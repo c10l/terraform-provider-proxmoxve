@@ -27,7 +27,7 @@ func (t firewallRefsDatasourceType) GetSchema(ctx context.Context) (tfsdk.Schema
 			"type": {
 				Type:                types.StringType,
 				Optional:            true,
-				MarkdownDescription: "Only list references of specified type. Accepted values: `alias`, `ipset`.",
+				MarkdownDescription: "Only list references of specified type. Accepted values: `alias`, `ipset`",
 			},
 			"refs": {
 				Computed: true,

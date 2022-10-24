@@ -3,12 +3,12 @@
 page_title: "proxmoxve_version Data Source - proxmoxve-terraform-provider"
 subcategory: ""
 description: |-
-  
+  API version details, including some parts of the global datacenter config.
 ---
 
 # proxmoxve_version (Data Source)
 
-
+API version details, including some parts of the global datacenter config.
 
 
 
@@ -17,9 +17,10 @@ description: |-
 
 ### Read-Only
 
+- `console` (String) The default console viewer to use. One of `applet`, `vv`, `html5`, `xtermjs`
 - `id` (String) The ID of this resource.
-- `release` (String)
-- `repoid` (String)
-- `version` (String)
+- `release` (String) The current Proxmox VE point release in `x.y` format
+- `repoid` (String) The short git revision from which this version was build
+- `version` (String) The full pve-manager package version of this node
 
 

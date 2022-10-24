@@ -16,22 +16,31 @@ type versionDatasourceType struct{}
 // Version data source schema
 func (r versionDatasourceType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
+		MarkdownDescription: "API version details, including some parts of the global datacenter config.",
 		Attributes: map[string]tfsdk.Attribute{
 			"id": {
 				Type:     types.StringType,
 				Computed: true,
 			},
 			"release": {
-				Type:     types.StringType,
-				Computed: true,
+				Type:                types.StringType,
+				Computed:            true,
+				MarkdownDescription: "The current Proxmox VE point release in `x.y` format",
 			},
 			"repoid": {
-				Type:     types.StringType,
-				Computed: true,
+				Type:                types.StringType,
+				Computed:            true,
+				MarkdownDescription: "The short git revision from which this version was build",
 			},
 			"version": {
-				Type:     types.StringType,
-				Computed: true,
+				Type:                types.StringType,
+				Computed:            true,
+				MarkdownDescription: "The full pve-manager package version of this node",
+			},
+			"console": {
+				Type:                types.StringType,
+				Computed:            true,
+				MarkdownDescription: "The default console viewer to use. One of `applet`, `vv`, `html5`, `xtermjs`",
 			},
 		},
 	}, nil

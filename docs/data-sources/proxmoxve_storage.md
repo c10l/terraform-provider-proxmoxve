@@ -17,7 +17,7 @@ description: |-
 
 ### Required
 
-- `name` (String)
+- `name` (String) The storage identifier
 
 ### Read-Only
 
