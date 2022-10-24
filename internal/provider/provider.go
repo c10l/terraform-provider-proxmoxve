@@ -124,8 +124,12 @@ func (p *ProxmoxVEProvider) Configure(ctx context.Context, req provider.Configur
 	resp.Diagnostics.Append(rootClientDiags...)
 	p.rootClient = rootClient
 
-	resp.DataSourceData = tokenClient
-	resp.ResourceData = tokenClient
+	clients := map[string]*proxmox.Client{
+		"token": tokenClient,
+		"root":  rootClient,
+	}
+	resp.DataSourceData = clients
+	resp.ResourceData = clients
 }
 
 func getRootClient(baseURL string, insecure bool, rootPassword types.String) (*proxmox.Client, diag.Diagnostics) {
@@ -190,7 +194,7 @@ func (p *ProxmoxVEProvider) Resources(ctx context.Context) []func() resource.Res
 		// NewStorageDirResource,
 		// NewStorageNFSResource,
 		// NewStorageBTRFSResource,
-		// NewAcmeAccountResource,
+		NewACMEAccountResource,
 		// NewAcmePluginResource,
 		// NewFirewallAliasResource,
 	}

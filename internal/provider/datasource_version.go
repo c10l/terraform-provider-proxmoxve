@@ -77,7 +77,7 @@ func (d *VersionDataSource) Configure(ctx context.Context, req datasource.Config
 		return
 	}
 
-	client, ok := req.ProviderData.(*proxmox.Client)
+	client, ok := req.ProviderData.(map[string]*proxmox.Client)["token"]
 
 	if !ok {
 		resp.Diagnostics.AddError(
