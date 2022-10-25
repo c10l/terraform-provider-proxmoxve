@@ -1,179 +1,197 @@
 package provider
 
-// import (
-// 	"context"
-// 	"fmt"
+import (
+	"context"
+	"fmt"
 
-// 	"github.com/c10l/proxmoxve-client-go/api/cluster/firewall/aliases"
-// 	"github.com/hashicorp/terraform-plugin-framework/diag"
-// 	"github.com/hashicorp/terraform-plugin-framework/path"
-// 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
-// 	"github.com/hashicorp/terraform-plugin-framework/types"
-// )
+	proxmox "github.com/c10l/proxmoxve-client-go/api"
+	"github.com/c10l/proxmoxve-client-go/api/cluster/firewall/aliases"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
 
-// // Ensure provider defined types fully satisfy framework interfaces
-// var _ tfsdk.ResourceType = firewallAliasResourceType{}
-// var _ tfsdk.Resource = firewallAliasResource{}
-// var _ tfsdk.ResourceWithImportState = firewallAliasResource{}
+// Ensure provider defined types fully satisfy framework interfaces
+var _ resource.Resource = &FirewallAliasResource{}
+var _ resource.ResourceWithImportState = &FirewallAliasResource{}
 
-// type firewallAliasResourceType struct{}
+func NewFirewallAliasResource() resource.Resource {
+	return &FirewallAliasResource{}
+}
 
-// func (t firewallAliasResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
-// 	return tfsdk.Schema{
-// 		Attributes: map[string]tfsdk.Attribute{
-// 			"id": {
-// 				Computed: true,
-// 				Type:     types.StringType,
-// 			},
-// 			"name": {
-// 				Required: true,
-// 				Type:     types.StringType,
-// 			},
-// 			"cidr": {
-// 				Required: true,
-// 				Type:     types.StringType,
-// 			},
-// 			"digest": {
-// 				Computed: true,
-// 				Type:     types.StringType,
-// 			},
-// 			"comment": {
-// 				Optional: true,
-// 				Type:     types.StringType,
-// 			},
-// 		},
-// 	}, nil
-// }
+// FirewallAliasResource defines the resource implementation.
+type FirewallAliasResource struct {
+	client *proxmox.Client
+}
 
-// func (t firewallAliasResourceType) NewResource(ctx context.Context, in tfsdk.Provider) (tfsdk.Resource, diag.Diagnostics) {
-// 	provider, diags := convertProviderType(in)
-// 	return firewallAliasResource{provider: provider}, diags
-// }
+// FirewallAliasResource describes the resource data model.
+type FirewallAliasResourceModel struct {
+	ID      types.String `tfsdk:"id"`
+	Name    types.String `tfsdk:"name"`
+	CIDR    types.String `tfsdk:"cidr"`
+	Digest  types.String `tfsdk:"digest"`
+	Comment types.String `tfsdk:"comment"`
+}
 
-// type firewallAliasResourceData struct {
-// 	ID      types.String `tfsdk:"id"`
-// 	Name    types.String `tfsdk:"name"`
-// 	CIDR    types.String `tfsdk:"cidr"`
-// 	Digest  types.String `tfsdk:"digest"`
-// 	Comment types.String `tfsdk:"comment"`
-// }
+func (r *FirewallAliasResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_firewall_alias"
+}
 
-// type firewallAliasResource struct {
-// 	provider provider
-// }
+func (r *FirewallAliasResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
+	return tfsdk.Schema{
+		Attributes: map[string]tfsdk.Attribute{
+			"id": {
+				Computed: true,
+				Type:     types.StringType,
+			},
+			"name": {
+				Required: true,
+				Type:     types.StringType,
+			},
+			"cidr": {
+				Required: true,
+				Type:     types.StringType,
+			},
+			"digest": {
+				Computed: true,
+				Type:     types.StringType,
+			},
+			"comment": {
+				Optional: true,
+				Type:     types.StringType,
+			},
+		},
+	}, nil
+}
 
-// func (r firewallAliasResource) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
-// 	var data firewallAliasResourceData
-// 	diags := req.Config.Get(ctx, &data)
-// 	resp.Diagnostics.Append(diags...)
-// 	if resp.Diagnostics.HasError() {
-// 		return
-// 	}
+func (r *FirewallAliasResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	// Prevent panic if the provider has not been configured.
+	if req.ProviderData == nil {
+		return
+	}
 
-// 	postReq := aliases.PostRequest{Client: r.provider.client, Name: data.Name.Value, CIDR: data.CIDR.Value}
-// 	if !data.Comment.Null {
-// 		postReq.Comment = &data.Comment.Value
-// 	}
-// 	err := postReq.Post()
-// 	if err != nil {
-// 		resp.Diagnostics.AddError("Error creating firewall_alias", err.Error())
-// 		return
-// 	}
+	client, ok := req.ProviderData.(map[string]*proxmox.Client)["token"]
 
-// 	getResp, err := aliases.ItemGetRequest{Client: r.provider.client, Name: data.Name.Value}.Get()
-// 	if err != nil {
-// 		resp.Diagnostics.AddError("Error retrieving firewall_alias", err.Error())
-// 		return
-// 	}
-// 	r.convertAPIGetResponseToTerraform(ctx, *getResp, &data)
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Data Source Configure Type",
+			fmt.Sprintf("Expected *proxmox.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+		)
 
-// 	diags = resp.State.Set(ctx, data)
-// 	resp.Diagnostics.Append(diags...)
-// }
+		return
+	}
 
-// func (r firewallAliasResource) Delete(ctx context.Context, req tfsdk.DeleteResourceRequest, resp *tfsdk.DeleteResourceResponse) {
-// 	var data firewallAliasResourceData
-// 	diags := req.State.Get(ctx, &data)
-// 	resp.Diagnostics.Append(diags...)
-// 	if resp.Diagnostics.HasError() {
-// 		return
-// 	}
+	r.client = client
+}
 
-// 	err := aliases.ItemDeleteRequest{Client: r.provider.client, Name: data.Name.Value}.Delete()
-// 	if err != nil {
-// 		resp.Diagnostics.AddError("Error deleting firewall_alias", err.Error())
-// 		return
-// 	}
-// }
+func (r *FirewallAliasResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var data *FirewallAliasResourceModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
-// func (r firewallAliasResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest, resp *tfsdk.ReadResourceResponse) {
-// 	var data firewallAliasResourceData
-// 	diags := req.State.Get(ctx, &data)
-// 	resp.Diagnostics.Append(diags...)
-// 	if resp.Diagnostics.HasError() {
-// 		return
-// 	}
+	postReq := aliases.PostRequest{Client: r.client, Name: data.Name.Value, CIDR: data.CIDR.Value}
+	if !data.Comment.Null {
+		postReq.Comment = &data.Comment.Value
+	}
+	err := postReq.Post()
+	if err != nil {
+		resp.Diagnostics.AddError("Error creating firewall_alias", err.Error())
+		return
+	}
 
-// 	alias, err := aliases.ItemGetRequest{Client: r.provider.client, Name: data.Name.Value}.Get()
-// 	if err != nil {
-// 		resp.Diagnostics.AddError(fmt.Sprintf("Error reading firewall_alias.%s", data.Name.Value), err.Error())
-// 		return
-// 	}
+	getResp, err := aliases.ItemGetRequest{Client: r.client, Name: data.Name.Value}.Get()
+	if err != nil {
+		resp.Diagnostics.AddError("Error retrieving firewall_alias", err.Error())
+		return
+	}
+	r.convertAPIGetResponseToTerraform(ctx, *getResp, data)
 
-// 	// TODO: Read data from the global /firewall/aliases endpoint to get digest
+	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
+}
 
-// 	r.convertAPIGetResponseToTerraform(ctx, *alias, &data)
+func (r *FirewallAliasResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var data *FirewallAliasResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
-// 	diags = resp.State.Set(ctx, data)
-// 	resp.Diagnostics.Append(diags...)
-// }
+	alias, err := aliases.ItemGetRequest{Client: r.client, Name: data.Name.Value}.Get()
+	if err != nil {
+		resp.Diagnostics.AddError(fmt.Sprintf("Error reading firewall_alias.%s", data.Name.Value), err.Error())
+		return
+	}
 
-// func (r firewallAliasResource) Update(ctx context.Context, req tfsdk.UpdateResourceRequest, resp *tfsdk.UpdateResourceResponse) {
-// 	var config firewallAliasResourceData
-// 	diags := req.Config.Get(ctx, &config)
-// 	resp.Diagnostics.Append(diags...)
+	// TODO: Read data from the global /firewall/aliases endpoint to get digest
 
-// 	var state firewallAliasResourceData
-// 	diags = req.State.Get(ctx, &state)
-// 	resp.Diagnostics.Append(diags...)
+	r.convertAPIGetResponseToTerraform(ctx, *alias, data)
 
-// 	if resp.Diagnostics.HasError() {
-// 		return
-// 	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
+}
 
-// 	putReq := aliases.ItemPutRequest{Client: r.provider.client, Name: state.Name.Value, CIDR: config.CIDR.Value}
-// 	if state.Name.Value != config.Name.Value {
-// 		putReq.Rename = &config.Name.Value
-// 	}
-// 	if !config.Comment.Null {
-// 		putReq.Comment = &config.Comment.Value
-// 	}
-// 	err := putReq.Put()
-// 	if err != nil {
-// 		resp.Diagnostics.AddError(fmt.Sprintf("error updating firewall_alias.%s", state.Name.Value), err.Error())
-// 		return
-// 	}
+func (r *FirewallAliasResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var config *FirewallAliasResourceModel
+	diags := req.Config.Get(ctx, &config)
+	resp.Diagnostics.Append(diags...)
 
-// 	getResp, err := aliases.ItemGetRequest{Client: r.provider.client, Name: config.Name.Value}.Get()
-// 	if err != nil {
-// 		resp.Diagnostics.AddError("Error retrieving firewall_alias", err.Error())
-// 		return
-// 	}
-// 	r.convertAPIGetResponseToTerraform(ctx, *getResp, &config)
+	var state *FirewallAliasResourceModel
+	diags = req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
 
-// 	diags = resp.State.Set(ctx, &config)
-// 	resp.Diagnostics.Append(diags...)
-// }
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
-// func (r firewallAliasResource) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
-// 	tfsdk.ResourceImportStatePassthroughID(ctx, path.Root("name"), req, resp)
-// }
+	putReq := aliases.ItemPutRequest{Client: r.client, Name: state.Name.Value, CIDR: config.CIDR.Value}
+	if state.Name.Value != config.Name.Value {
+		putReq.Rename = &config.Name.Value
+	}
+	if !config.Comment.Null {
+		putReq.Comment = &config.Comment.Value
+	}
+	err := putReq.Put()
+	if err != nil {
+		resp.Diagnostics.AddError(fmt.Sprintf("error updating firewall_alias.%s", state.Name.Value), err.Error())
+		return
+	}
 
-// func (r firewallAliasResource) convertAPIGetResponseToTerraform(ctx context.Context, apiData aliases.ItemGetResponse, tfData *firewallAliasResourceData) {
-// 	tfData.ID = types.String{Value: apiData.Name}
-// 	tfData.Name = types.String{Value: apiData.Name}
-// 	tfData.CIDR = types.String{Value: apiData.CIDR}
-// 	if apiData.Comment != nil {
-// 		tfData.Comment = types.String{Value: *apiData.Comment}
-// 	}
-// }
+	getResp, err := aliases.ItemGetRequest{Client: r.client, Name: config.Name.Value}.Get()
+	if err != nil {
+		resp.Diagnostics.AddError("Error retrieving firewall_alias", err.Error())
+		return
+	}
+	r.convertAPIGetResponseToTerraform(ctx, *getResp, config)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &config)...)
+}
+
+func (r *FirewallAliasResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var data *FirewallAliasResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	err := aliases.ItemDeleteRequest{Client: r.client, Name: data.Name.Value}.Delete()
+	if err != nil {
+		resp.Diagnostics.AddError("Error deleting firewall_alias", err.Error())
+		return
+	}
+}
+
+func (r *FirewallAliasResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
+}
+
+func (r *FirewallAliasResource) convertAPIGetResponseToTerraform(ctx context.Context, apiData aliases.ItemGetResponse, tfData *FirewallAliasResourceModel) {
+	tfData.ID = types.String{Value: apiData.Name}
+	tfData.Name = types.String{Value: apiData.Name}
+	tfData.CIDR = types.String{Value: apiData.CIDR}
+	if apiData.Comment != nil {
+		tfData.Comment = types.String{Value: *apiData.Comment}
+	}
+}
