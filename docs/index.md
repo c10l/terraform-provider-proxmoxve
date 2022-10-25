@@ -21,8 +21,8 @@ provider "proxmoxve" {}
 
 ### Optional
 
-- `base_url` (String)
-- `root_password` (String, Sensitive)
-- `secret` (String, Sensitive)
-- `tls_insecure` (Boolean)
-- `token_id` (String)
+- `base_url` (String) Base URL of the Proxmox VE API server. e.g. `https://pmve.example.com:8006`
+- `root_password` (String, Sensitive) Password of the `root` user. Some API endpoints can only be called via a ticket which must be requested as the `root` user (not an API token). e.g. the ACME endpoits
+- `secret` (String, Sensitive) API Token secret
+- `tls_insecure` (Boolean) Set to `true` to bypass TLS cert validation
+- `token_id` (String) API token ID. e.g. user@pam!token_name

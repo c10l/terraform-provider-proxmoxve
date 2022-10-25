@@ -98,6 +98,8 @@ func (r *ACMEPluginResource) Configure(ctx context.Context, req resource.Configu
 		return
 	}
 
+	// TODO: Validate that the `root` password is set. Return an actionable error otherwise.
+
 	client, ok := req.ProviderData.(map[string]*proxmox.Client)["root"]
 
 	if !ok {
