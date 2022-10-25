@@ -195,7 +195,7 @@ func (p *ProxmoxVEProvider) Resources(ctx context.Context) []func() resource.Res
 		// NewStorageNFSResource,
 		// NewStorageBTRFSResource,
 		NewACMEAccountResource,
-		// NewAcmePluginResource,
+		NewACMEPluginResource,
 		// NewFirewallAliasResource,
 	}
 }
