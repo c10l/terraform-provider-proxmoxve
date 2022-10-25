@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"os"
 	"strconv"
 
@@ -18,14 +19,13 @@ import (
 var _ provider.Provider = &ProxmoxVEProvider{}
 var _ provider.ProviderWithMetadata = &ProxmoxVEProvider{}
 
+type getClientFunc func() (*proxmox.Client, error)
+
 type ProxmoxVEProvider struct {
 	// version is set to the provider version on release, "dev" when the
 	// provider is built and ran locally, and "test" when running acceptance
 	// testing.
-	version    string
-	client     *proxmox.Client
-	rootClient *proxmox.Client
-	// configured bool
+	version string
 }
 
 // Provider schema struct
@@ -121,76 +121,58 @@ func (p *ProxmoxVEProvider) Configure(ctx context.Context, req provider.Configur
 		tlsInsecure = data.TLSInsecure.Value
 	}
 
-	tokenClient, tokenClientDiags := getTokenClient(baseURL, tlsInsecure, data.TokenID, data.Secret)
-	resp.Diagnostics.Append(tokenClientDiags...)
-	p.client = tokenClient
-
-	rootClient, rootClientDiags := getRootClient(baseURL, tlsInsecure, data.RootPassword)
-	resp.Diagnostics.Append(rootClientDiags...)
-	p.rootClient = rootClient
-
-	clients := map[string]*proxmox.Client{
-		"token": tokenClient,
-		"root":  rootClient,
+	clients := map[string]getClientFunc{
+		"token": getTokenClientFunc(baseURL, tlsInsecure, data.TokenID, data.Secret),
+		"root":  getRootClientFunc(baseURL, tlsInsecure, data.RootPassword),
 	}
 	resp.DataSourceData = clients
 	resp.ResourceData = clients
 }
 
-func getRootClient(baseURL string, insecure bool, rootPassword types.String) (*proxmox.Client, diag.Diagnostics) {
-	diags := diag.Diagnostics{}
+func getRootClientFunc(baseURL string, insecure bool, rootPassword types.String) func() (*proxmox.Client, error) {
+	return func() (*proxmox.Client, error) {
+		pwd := rootPassword.Value
+		if rootPassword.Null {
+			pwd = os.Getenv("PROXMOXVE_ROOT_PASSWORD")
+			if pwd == "" {
+				return nil, errors.New("root_password cannot be empty")
+			}
+		}
 
-	pwd := rootPassword.Value
-	if rootPassword.Null {
-		pwd = os.Getenv("PROXMOXVE_ROOT_PASSWORD")
+		rootClient, err := proxmox.NewTicketClient(baseURL, "root@pam", pwd, insecure)
+		if err != nil {
+			return nil, errors.New("unable to create ProxMox VE client with root@pam user and password:\n\n" + err.Error())
+		}
+
+		return rootClient, nil
 	}
-
-	rootClient, err := proxmox.NewTicketClient(baseURL, "root@pam", pwd, insecure)
-	if err != nil {
-		diags.AddError(
-			"Unable to create root@pam ticket client",
-			"Unable to create ProxMox VE client with root@pam user and password:\n\n"+err.Error(),
-		)
-	}
-
-	return rootClient, diags
 }
 
-func getTokenClient(baseURL string, insecure bool, tokenID, tokenSecret types.String) (*proxmox.Client, diag.Diagnostics) {
-	diags := diag.Diagnostics{}
+func getTokenClientFunc(baseURL string, insecure bool, tokenID, tokenSecret types.String) func() (*proxmox.Client, error) {
+	return func() (*proxmox.Client, error) {
+		id := tokenID.Value
+		if tokenID.Null {
+			id = os.Getenv("PROXMOXVE_TOKEN_ID")
+		}
+		if id == "" {
+			return nil, errors.New("token_id cannot be empty")
+		}
 
-	id := tokenID.Value
-	if tokenID.Null {
-		id = os.Getenv("PROXMOXVE_TOKEN_ID")
-	}
-	if id == "" {
-		diags.AddError(
-			"Unable to find token_id",
-			"Token ID cannot be an empty string",
-		)
-	}
+		secret := tokenSecret.Value
+		if tokenSecret.Null {
+			secret = os.Getenv("PROXMOXVE_SECRET")
+		}
+		if secret == "" {
+			return nil, errors.New("secret cannot empty")
+		}
 
-	secret := tokenSecret.Value
-	if tokenSecret.Null {
-		secret = os.Getenv("PROXMOXVE_SECRET")
-	}
-	if secret == "" {
-		// Error vs warning - empty value must stop execution
-		diags.AddError(
-			"Unable to find secret",
-			"Secret cannot be an empty string",
-		)
-	}
+		tokenClient, err := proxmox.NewAPITokenClient(baseURL, id, secret, insecure)
+		if err != nil {
+			return nil, errors.New("unable to create ProxMox VE client with API token:\n\n" + err.Error())
+		}
 
-	tokenClient, err := proxmox.NewAPITokenClient(baseURL, id, secret, insecure)
-	if err != nil {
-		diags.AddError(
-			"Unable to create token+secret client",
-			"Unable to create ProxMox VE client with API token:\n\n"+err.Error(),
-		)
+		return tokenClient, nil
 	}
-
-	return tokenClient, diags
 }
 
 // GetResources - Defines provider resources

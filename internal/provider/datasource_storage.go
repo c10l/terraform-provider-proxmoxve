@@ -95,7 +95,7 @@ func (d *StorageDataSource) Configure(ctx context.Context, req datasource.Config
 		return
 	}
 
-	client, ok := req.ProviderData.(map[string]*proxmox.Client)["token"]
+	clientFunc, ok := req.ProviderData.(map[string]getClientFunc)["token"]
 
 	if !ok {
 		resp.Diagnostics.AddError(
@@ -104,6 +104,14 @@ func (d *StorageDataSource) Configure(ctx context.Context, req datasource.Config
 		)
 
 		return
+	}
+
+	client, err := clientFunc()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to instantiate client",
+			err.Error(),
+		)
 	}
 
 	d.client = client

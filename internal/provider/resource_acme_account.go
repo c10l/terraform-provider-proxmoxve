@@ -83,9 +83,7 @@ func (r *ACMEAccountResource) Configure(ctx context.Context, req resource.Config
 		return
 	}
 
-	// TODO: Validate that the `root` password is set. Return an actionable error otherwise.
-
-	client, ok := req.ProviderData.(map[string]*proxmox.Client)["root"]
+	clientFunc, ok := req.ProviderData.(map[string]getClientFunc)["root"]
 
 	if !ok {
 		resp.Diagnostics.AddError(
@@ -94,6 +92,14 @@ func (r *ACMEAccountResource) Configure(ctx context.Context, req resource.Config
 		)
 
 		return
+	}
+
+	client, err := clientFunc()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to instantiate client",
+			err.Error(),
+		)
 	}
 
 	r.client = client

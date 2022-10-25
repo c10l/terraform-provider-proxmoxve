@@ -117,7 +117,7 @@ func (r *StorageNFSResource) Configure(ctx context.Context, req resource.Configu
 		return
 	}
 
-	client, ok := req.ProviderData.(map[string]*proxmox.Client)["token"]
+	clientFunc, ok := req.ProviderData.(map[string]getClientFunc)["token"]
 
 	if !ok {
 		resp.Diagnostics.AddError(
@@ -126,6 +126,14 @@ func (r *StorageNFSResource) Configure(ctx context.Context, req resource.Configu
 		)
 
 		return
+	}
+
+	client, err := clientFunc()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to instantiate client",
+			err.Error(),
+		)
 	}
 
 	r.client = client
