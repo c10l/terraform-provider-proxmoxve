@@ -192,7 +192,7 @@ func getTokenClient(baseURL string, insecure bool, tokenID, tokenSecret types.St
 func (p *ProxmoxVEProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewStorageBTRFSResource,
-		// NewStorageDirResource,
+		NewStorageDirResource,
 		// NewStorageNFSResource,
 		NewACMEAccountResource,
 		NewACMEPluginResource,
