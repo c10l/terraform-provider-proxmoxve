@@ -193,7 +193,7 @@ func (p *ProxmoxVEProvider) Resources(ctx context.Context) []func() resource.Res
 	return []func() resource.Resource{
 		NewStorageBTRFSResource,
 		NewStorageDirResource,
-		// NewStorageNFSResource,
+		NewStorageNFSResource,
 		NewACMEAccountResource,
 		NewACMEPluginResource,
 		NewFirewallAliasResource,
