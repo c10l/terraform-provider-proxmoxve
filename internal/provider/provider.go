@@ -204,7 +204,7 @@ func (p *ProxmoxVEProvider) Resources(ctx context.Context) []func() resource.Res
 func (p *ProxmoxVEProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		NewVersionDataSource,
-		// NewStorageDataSource,
+		NewStorageDataSource,
 		// NewFirewallRefsDataSource,
 	}
 }
