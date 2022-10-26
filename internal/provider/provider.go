@@ -45,16 +45,17 @@ func (p *ProxmoxVEProvider) Metadata(ctx context.Context, req provider.MetadataR
 // GetSchema
 func (p *ProxmoxVEProvider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
+		MarkdownDescription: "Provider configuration. The following environment variables can be set as a fallback for any omitted attributes in the provider declaration: `PROXMOXVE_BASE_URL`, `PROXMOXVE_TOKEN_ID`, `PROXMOXVE_SECRET`, `PROXMOXVE_TLS_INSECURE`, `PROXMOXVE_ROOT_PASSWORD`",
 		Attributes: map[string]tfsdk.Attribute{
 			"base_url": {
 				Type:                types.StringType,
 				Optional:            true,
-				MarkdownDescription: "Base URL of the Proxmox VE API server. e.g. `https://pmve.example.com:8006`",
+				MarkdownDescription: "Base URL of the Proxmox VE API server. e.g. https://pmve.example.com:8006",
 			},
 			"token_id": {
 				Type:                types.StringType,
 				Optional:            true,
-				MarkdownDescription: "API token ID. e.g. user@pam!token_name",
+				MarkdownDescription: "API token ID. e.g. `user@pam!token_name`",
 			},
 			"secret": {
 				Type:                types.StringType,
@@ -66,12 +67,12 @@ func (p *ProxmoxVEProvider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Dia
 				Type:                types.StringType,
 				Optional:            true,
 				Sensitive:           true,
-				MarkdownDescription: "Password of the `root` user. Some API endpoints can only be called via a ticket which must be requested as the `root` user (not an API token). e.g. the ACME endpoits",
+				MarkdownDescription: "Password of the `root` user. Some API endpoints can only be called via a ticket which must be acquired as the `root@pam` user (as opposed to an API token). e.g. the ACME endpoits",
 			},
 			"tls_insecure": {
 				Type:                types.BoolType,
 				Optional:            true,
-				MarkdownDescription: "Set to `true` to bypass TLS cert validation",
+				MarkdownDescription: "Set to `true` to bypass TLS cert validation. Defaults to `false`",
 			},
 		},
 	}, nil
