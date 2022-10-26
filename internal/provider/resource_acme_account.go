@@ -49,29 +49,34 @@ func (r *ACMEAccountResource) Metadata(ctx context.Context, req resource.Metadat
 
 func (r *ACMEAccountResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
+		MarkdownDescription: "Define an ACME account with CA." + docRequiresRoot,
 		Attributes: map[string]tfsdk.Attribute{
 			"id": {
 				Computed: true,
 				Type:     types.StringType,
 			},
 			"name": {
-				Required:      true,
-				Type:          types.StringType,
-				PlanModifiers: []tfsdk.AttributePlanModifier{resource.RequiresReplace()},
+				Required:            true,
+				Type:                types.StringType,
+				PlanModifiers:       []tfsdk.AttributePlanModifier{resource.RequiresReplace()},
+				MarkdownDescription: "Name of the account in Proxmox VE.",
 			},
 			"contact": {
-				Required: true,
-				Type:     types.StringType,
+				Required:            true,
+				Type:                types.StringType,
+				MarkdownDescription: "Contact email addresses.",
 			},
 			"directory": {
-				Optional:      true,
-				Type:          types.StringType,
-				PlanModifiers: []tfsdk.AttributePlanModifier{resource.RequiresReplace()},
+				Optional:            true,
+				Type:                types.StringType,
+				PlanModifiers:       []tfsdk.AttributePlanModifier{resource.RequiresReplace()},
+				MarkdownDescription: "URL of ACME CA directory endpoint. Defaults to the production directory of Let's Encrypt.",
 			},
 			"tos_url": {
-				Optional:      true,
-				Type:          types.StringType,
-				PlanModifiers: []tfsdk.AttributePlanModifier{resource.RequiresReplace()},
+				Optional:            true,
+				Type:                types.StringType,
+				PlanModifiers:       []tfsdk.AttributePlanModifier{resource.RequiresReplace()},
+				MarkdownDescription: "URL of CA TermsOfService - setting this indicates agreement.",
 			},
 		},
 	}, nil

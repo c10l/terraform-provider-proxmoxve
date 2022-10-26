@@ -45,7 +45,8 @@ func (p *ProxmoxVEProvider) Metadata(ctx context.Context, req provider.MetadataR
 // GetSchema
 func (p *ProxmoxVEProvider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
-		MarkdownDescription: "Provider configuration. The following environment variables can be set as a fallback for any omitted attributes in the provider declaration: `PROXMOXVE_BASE_URL`, `PROXMOXVE_TOKEN_ID`, `PROXMOXVE_SECRET`, `PROXMOXVE_TLS_INSECURE`, `PROXMOXVE_ROOT_PASSWORD`",
+		MarkdownDescription: "The following environment variables can be set as a fallback for any omitted attributes in the provider declaration: `PROXMOXVE_BASE_URL`, `PROXMOXVE_TOKEN_ID`, `PROXMOXVE_SECRET`, `PROXMOXVE_ROOT_PASSWORD`, `PROXMOXVE_TLS_INSECURE`.</p>" +
+			"**NOTE:** `base_url` attribute is always required. Additionally, most API endpoints require `token_id` and `secret`, whilst some require `root_password`. The latter will be documented in the resource.",
 		Attributes: map[string]tfsdk.Attribute{
 			"base_url": {
 				Type:                types.StringType,

@@ -3,12 +3,12 @@
 page_title: "proxmoxve-terraform-provider Provider"
 subcategory: ""
 description: |-
-  Provider configuration. The following environment variables can be set as a fallback for any omitted attributes in the provider declaration: PROXMOXVE_BASE_URL, PROXMOXVE_TOKEN_ID, PROXMOXVE_SECRET, PROXMOXVE_TLS_INSECURE, PROXMOXVE_ROOT_PASSWORD
+  The following environment variables can be set as a fallback for any omitted attributes in the provider declaration: PROXMOXVE_BASE_URL, PROXMOXVE_TOKEN_ID, PROXMOXVE_SECRET, PROXMOXVE_ROOT_PASSWORD, PROXMOXVE_TLS_INSECURE.NOTE: base_url attribute is always required. Additionally, most API endpoints require token_id and secret, whilst some require root_password. The latter will be documented in the resource.
 ---
 
 # proxmoxve-terraform-provider Provider
 
-Provider configuration. The following environment variables can be set as a fallback for any omitted attributes in the provider declaration: `PROXMOXVE_BASE_URL`, `PROXMOXVE_TOKEN_ID`, `PROXMOXVE_SECRET`, `PROXMOXVE_TLS_INSECURE`, `PROXMOXVE_ROOT_PASSWORD`
+The following environment variables can be set as a fallback for any omitted attributes in the provider declaration: `PROXMOXVE_BASE_URL`, `PROXMOXVE_TOKEN_ID`, `PROXMOXVE_SECRET`, `PROXMOXVE_ROOT_PASSWORD`, `PROXMOXVE_TLS_INSECURE`.</p>**NOTE:** `base_url` attribute is always required. Additionally, most API endpoints require `token_id` and `secret`, whilst some require `root_password`. The latter will be documented in the resource.
 
 ## Example Usage
 
