@@ -36,3 +36,6 @@ test:
 
 testacc:
 	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 120m -run "^$(TESTNAME)$$"
+
+generate:
+	go generate ./...
