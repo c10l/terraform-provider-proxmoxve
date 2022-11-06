@@ -2,12 +2,12 @@ module terraform-provider-proxmoxve
 
 go 1.18
 
-replace github.com/c10l/proxmoxve-client-go => ../proxmoxve-client-go
+// replace github.com/c10l/proxmoxve-client-go => ../proxmoxve-client-go
 
 require (
 	github.com/c10l/proxmoxve-client-go v0.0.0-20220823091240-1b1e8c48eb9f
 	github.com/hashicorp/terraform-plugin-docs v0.13.0
-	github.com/hashicorp/terraform-plugin-framework v0.14.0
+	github.com/hashicorp/terraform-plugin-framework v0.15.0
 	github.com/hashicorp/terraform-plugin-go v0.14.0
 	github.com/hashicorp/terraform-plugin-log v0.7.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.19.0
@@ -67,7 +67,7 @@ require (
 	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20221025140454-527a21cfbd71 // indirect
+	google.golang.org/genproto v0.0.0-20221027153422-115e99e71e1c // indirect
 	google.golang.org/grpc v1.50.1 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 )
