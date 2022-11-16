@@ -9,6 +9,7 @@ import (
 
 	proxmox "github.com/c10l/proxmoxve-client-go/api"
 	"github.com/c10l/proxmoxve-client-go/api/cluster/acme/account"
+	"github.com/c10l/proxmoxve-client-go/helpers"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -117,13 +118,13 @@ func (r *ACMEAccountResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	postReq := account.PostRequest{Client: r.client, Contact: data.Contact.Value}
-	postReq.Name = data.Name.Value
-	if !data.Directory.Null {
-		postReq.Directory = &data.Directory.Value
+	postReq := account.PostRequest{Client: r.client, Contact: data.Contact.ValueString()}
+	postReq.Name = data.Name.ValueString()
+	if !data.Directory.IsNull() {
+		postReq.Directory = helpers.PtrTo(data.Directory.ValueString())
 	}
-	if !data.TOSurl.Null {
-		postReq.TOSurl = &data.TOSurl.Value
+	if !data.TOSurl.IsNull() {
+		postReq.TOSurl = helpers.PtrTo(data.TOSurl.ValueString())
 	}
 	_, err := postReq.Post()
 	if err != nil {
@@ -148,11 +149,11 @@ func (r *ACMEAccountResource) Read(ctx context.Context, req resource.ReadRequest
 
 	account, err := r.eventuallyGet(ctx, data, 5*time.Second)
 	if err != nil {
-		if strings.Contains(err.Error(), fmt.Sprintf("ACME account config file '%s' does not exist", data.Name.Value)) {
+		if strings.Contains(err.Error(), fmt.Sprintf("ACME account config file '%s' does not exist", data.Name.ValueString())) {
 			resp.State.RemoveResource(ctx)
 			return
 		} else {
-			resp.Diagnostics.AddError(fmt.Sprintf("error reading acme_account.%s", data.Name.Value), err.Error())
+			resp.Diagnostics.AddError(fmt.Sprintf("error reading acme_account.%s", data.Name.ValueString()), err.Error())
 			return
 		}
 	}
@@ -169,11 +170,11 @@ func (r *ACMEAccountResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	putReq := account.ItemPutRequest{Client: r.client, Name: data.Name.Value}
-	putReq.Contact = data.Contact.Value
+	putReq := account.ItemPutRequest{Client: r.client, Name: data.Name.ValueString()}
+	putReq.Contact = data.Contact.ValueString()
 	_, err := putReq.Put()
 	if err != nil {
-		resp.Diagnostics.AddError(fmt.Sprintf("error updating acme_account.%s", data.Name.Value), err.Error())
+		resp.Diagnostics.AddError(fmt.Sprintf("error updating acme_account.%s", data.Name.ValueString()), err.Error())
 		return
 	}
 
@@ -187,7 +188,7 @@ func (r *ACMEAccountResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	err := account.ItemDeleteRequest{Client: r.client, Name: data.Name.Value}.Delete()
+	err := account.ItemDeleteRequest{Client: r.client, Name: data.Name.ValueString()}.Delete()
 	if err != nil {
 		resp.Diagnostics.AddError("Error deleting acme_account", err.Error())
 		return
@@ -199,10 +200,10 @@ func (r *ACMEAccountResource) ImportState(ctx context.Context, req resource.Impo
 }
 
 func (r *ACMEAccountResource) convertAPIGetResponseToTerraform(ctx context.Context, apiData account.ItemGetResponse, tfData *ACMEAccountResourceModel) {
-	tfData.ID = types.String{Value: tfData.Name.Value}
-	tfData.Contact = types.String{Value: strings.TrimPrefix(apiData.Account.Contact[0], "mailto:")}
-	tfData.Directory = types.String{Value: apiData.Directory}
-	tfData.TOSurl = types.String{Value: apiData.TOS}
+	tfData.ID = types.StringValue(tfData.Name.ValueString())
+	tfData.Contact = types.StringValue(strings.TrimPrefix(apiData.Account.Contact[0], "mailto:"))
+	tfData.Directory = types.StringValue(apiData.Directory)
+	tfData.TOSurl = types.StringValue(apiData.TOS)
 }
 
 func (r *ACMEAccountResource) eventuallyGet(ctx context.Context, data *ACMEAccountResourceModel, timeout time.Duration) (*account.ItemGetResponse, error) {
@@ -213,7 +214,7 @@ func (r *ACMEAccountResource) eventuallyGet(ctx context.Context, data *ACMEAccou
 		var acc *account.ItemGetResponse
 		elapsedTime := 0 * time.Second
 		for {
-			acc, err = account.ItemGetRequest{Client: r.client, Name: data.Name.Value}.Get()
+			acc, err = account.ItemGetRequest{Client: r.client, Name: data.Name.ValueString()}.Get()
 			if err == nil &&
 				acc.Directory != "" &&
 				acc.Location != "" &&
@@ -229,7 +230,7 @@ func (r *ACMEAccountResource) eventuallyGet(ctx context.Context, data *ACMEAccou
 			}
 			time.Sleep(wait)
 			elapsedTime += wait
-			fmt.Fprintf(os.Stderr, "Waiting for proxmoxve_acme_account.%s to converge... (%s)\n", data.Name.Value, elapsedTime)
+			fmt.Fprintf(os.Stderr, "Waiting for proxmoxve_acme_account.%s to converge... (%s)\n", data.Name.ValueString(), elapsedTime)
 		}
 	}()
 

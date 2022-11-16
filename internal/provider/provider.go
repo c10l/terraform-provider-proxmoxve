@@ -88,17 +88,17 @@ func (p *ProxmoxVEProvider) Configure(ctx context.Context, req provider.Configur
 	}
 
 	var baseURL string
-	if data.BaseURL.Unknown {
+	if data.BaseURL.IsUnknown() {
 		resp.Diagnostics.AddWarning(
 			"Unable to create client",
 			"Cannot use unknown value as URL",
 		)
 		return
 	}
-	if data.BaseURL.Null {
+	if data.BaseURL.IsNull() {
 		baseURL = os.Getenv("PROXMOXVE_BASE_URL")
 	} else {
-		baseURL = data.BaseURL.Value
+		baseURL = data.BaseURL.ValueString()
 	}
 	if baseURL == "" {
 		// Error vs warning - empty value must stop execution
@@ -110,7 +110,7 @@ func (p *ProxmoxVEProvider) Configure(ctx context.Context, req provider.Configur
 	}
 
 	var tlsInsecure bool
-	if data.TLSInsecure.Null {
+	if data.TLSInsecure.IsNull() {
 		var err error
 		tlsInsecure, err = strconv.ParseBool(os.Getenv("PROXMOXVE_TLS_INSECURE"))
 		if err != nil {
@@ -120,7 +120,7 @@ func (p *ProxmoxVEProvider) Configure(ctx context.Context, req provider.Configur
 			)
 		}
 	} else {
-		tlsInsecure = data.TLSInsecure.Value
+		tlsInsecure = data.TLSInsecure.ValueBool()
 	}
 
 	clients := map[string]getClientFunc{
@@ -133,8 +133,8 @@ func (p *ProxmoxVEProvider) Configure(ctx context.Context, req provider.Configur
 
 func getRootClientFunc(baseURL string, insecure bool, rootPassword types.String) func() (*proxmox.Client, error) {
 	return func() (*proxmox.Client, error) {
-		pwd := rootPassword.Value
-		if rootPassword.Null {
+		pwd := rootPassword.ValueString()
+		if rootPassword.IsNull() {
 			pwd = os.Getenv("PROXMOXVE_ROOT_PASSWORD")
 			if pwd == "" {
 				return nil, errors.New("root_password cannot be empty")
@@ -152,16 +152,16 @@ func getRootClientFunc(baseURL string, insecure bool, rootPassword types.String)
 
 func getTokenClientFunc(baseURL string, insecure bool, tokenID, tokenSecret types.String) func() (*proxmox.Client, error) {
 	return func() (*proxmox.Client, error) {
-		id := tokenID.Value
-		if tokenID.Null {
+		id := tokenID.ValueString()
+		if tokenID.IsNull() {
 			id = os.Getenv("PROXMOXVE_TOKEN_ID")
 		}
 		if id == "" {
 			return nil, errors.New("token_id cannot be empty")
 		}
 
-		secret := tokenSecret.Value
-		if tokenSecret.Null {
+		secret := tokenSecret.ValueString()
+		if tokenSecret.IsNull() {
 			secret = os.Getenv("PROXMOXVE_SECRET")
 		}
 		if secret == "" {

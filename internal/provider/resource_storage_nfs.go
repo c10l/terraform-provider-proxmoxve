@@ -148,31 +148,31 @@ func (r *StorageNFSResource) Create(ctx context.Context, req resource.CreateRequ
 
 	postReq := storage.PostRequest{
 		Client:      r.client,
-		Storage:     data.Name.Value,
+		Storage:     data.Name.ValueString(),
 		StorageType: storage.TypeNFS,
-		NFSServer:   &data.Server.Value,
-		NFSExport:   &data.Export.Value,
+		NFSServer:   helpers.PtrTo(data.Server.ValueString()),
+		NFSExport:   helpers.PtrTo(data.Export.ValueString()),
 	}
-	if !data.Content.Null {
+	if !data.Content.IsNull() {
 		if postReq.Content == nil {
 			postReq.Content = &[]string{}
 		}
 		resp.Diagnostics.Append(data.Content.ElementsAs(ctx, postReq.Content, false)...)
 	}
-	if !data.Nodes.Null {
+	if !data.Nodes.IsNull() {
 		if postReq.Nodes == nil {
 			postReq.Nodes = &[]string{}
 		}
 		resp.Diagnostics.Append(data.Nodes.ElementsAs(ctx, postReq.Nodes, false)...)
 	}
-	if !data.Disable.Null {
-		postReq.Disable = helpers.PtrTo(pvetypes.PVEBool(data.Disable.Value))
+	if !data.Disable.IsNull() {
+		postReq.Disable = helpers.PtrTo(pvetypes.PVEBool(data.Disable.ValueBool()))
 	}
-	if !data.MountOptions.Null {
-		postReq.NFSMountOptions = &data.MountOptions.Value
+	if !data.MountOptions.IsNull() {
+		postReq.NFSMountOptions = helpers.PtrTo(data.MountOptions.ValueString())
 	}
-	if !data.Preallocation.Null {
-		postReq.Preallocation = &data.Preallocation.Value
+	if !data.Preallocation.IsNull() {
+		postReq.Preallocation = helpers.PtrTo(data.Preallocation.ValueString())
 	}
 	_, err := postReq.Post()
 	if err != nil {
@@ -180,7 +180,7 @@ func (r *StorageNFSResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: r.client, Storage: data.Name.Value}.Get()
+	storage, err := storage.ItemGetRequest{Client: r.client, Storage: data.Name.ValueString()}.Get()
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading storage_nfs", err.Error())
 		return
@@ -203,10 +203,10 @@ func (r *StorageNFSResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: r.client, Storage: data.Name.Value}.Get()
+	storage, err := storage.ItemGetRequest{Client: r.client, Storage: data.Name.ValueString()}.Get()
 	if err != nil {
 		// If resource has been deleted outside of Terraform, we remove it from the plan state so it can be re-created.
-		if strings.Contains(err.Error(), fmt.Sprintf("500 storage '%s' does not exist", data.Name.Value)) {
+		if strings.Contains(err.Error(), fmt.Sprintf("500 storage '%s' does not exist", data.Name.ValueString())) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -229,27 +229,27 @@ func (r *StorageNFSResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	putReq := storage.ItemPutRequest{Client: r.client, Storage: data.Name.Value}
-	if !data.Content.Null {
+	putReq := storage.ItemPutRequest{Client: r.client, Storage: data.Name.ValueString()}
+	if !data.Content.IsNull() {
 		if putReq.Content == nil {
 			putReq.Content = &[]string{}
 		}
 		resp.Diagnostics.Append(data.Content.ElementsAs(ctx, putReq.Content, false)...)
 	}
-	if !data.Nodes.Null {
+	if !data.Nodes.IsNull() {
 		if putReq.Nodes == nil {
 			putReq.Nodes = &[]string{}
 		}
 		resp.Diagnostics.Append(data.Nodes.ElementsAs(ctx, putReq.Nodes, false)...)
 	}
-	if !data.Disable.Null {
-		putReq.Disable = helpers.PtrTo(pvetypes.PVEBool(data.Disable.Value))
+	if !data.Disable.IsNull() {
+		putReq.Disable = helpers.PtrTo(pvetypes.PVEBool(data.Disable.ValueBool()))
 	}
-	if !data.MountOptions.Null {
-		putReq.NFSMountOptions = &data.MountOptions.Value
+	if !data.MountOptions.IsNull() {
+		putReq.NFSMountOptions = helpers.PtrTo(data.MountOptions.ValueString())
 	}
-	if !data.Preallocation.Null {
-		putReq.Preallocation = &data.Preallocation.Value
+	if !data.Preallocation.IsNull() {
+		putReq.Preallocation = helpers.PtrTo(data.Preallocation.ValueString())
 	}
 	_, err := putReq.Put()
 	if err != nil {
@@ -257,7 +257,7 @@ func (r *StorageNFSResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: r.client, Storage: data.Name.Value}.Get()
+	storage, err := storage.ItemGetRequest{Client: r.client, Storage: data.Name.ValueString()}.Get()
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading storage_nfs", err.Error())
 		return
@@ -281,7 +281,7 @@ func (r *StorageNFSResource) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	err := storage.ItemDeleteRequest{Client: r.client, Storage: data.Name.Value}.Delete()
+	err := storage.ItemDeleteRequest{Client: r.client, Storage: data.Name.ValueString()}.Delete()
 	if err != nil {
 		resp.Diagnostics.AddError("Error deleting storage_nfs", err.Error())
 		return
@@ -297,16 +297,16 @@ func (r *StorageNFSResource) convertAPIGetResponseToTerraform(ctx context.Contex
 	diags = append(diags, tfsdk.ValueFrom(ctx, apiData.Content, types.SetType{ElemType: types.StringType}, &tfData.Content)...)
 	diags = append(diags, tfsdk.ValueFrom(ctx, apiData.Nodes, types.SetType{ElemType: types.StringType}, &tfData.Nodes)...)
 
-	tfData.ID = types.String{Value: apiData.Storage}
-	tfData.Name = types.String{Value: apiData.Storage}
-	tfData.Server = types.String{Value: apiData.NFSServer}
-	tfData.PruneBackups = types.String{Value: apiData.PruneBackups}
-	tfData.MountOptions = types.String{Value: apiData.NFSMountOptions}
-	tfData.Export = types.String{Value: apiData.NFSExport}
-	tfData.Type = types.String{Value: apiData.Type}
+	tfData.ID = types.StringValue(apiData.Storage)
+	tfData.Name = types.StringValue(apiData.Storage)
+	tfData.Server = types.StringValue(apiData.NFSServer)
+	tfData.PruneBackups = types.StringValue(apiData.PruneBackups)
+	tfData.MountOptions = types.StringValue(apiData.NFSMountOptions)
+	tfData.Export = types.StringValue(apiData.NFSExport)
+	tfData.Type = types.StringValue(apiData.Type)
 
-	tfData.Disable = types.Bool{Value: apiData.Disable}
-	tfData.Preallocation = types.String{Value: apiData.Preallocation}
+	tfData.Disable = types.BoolValue(apiData.Disable)
+	tfData.Preallocation = types.StringValue(apiData.Preallocation)
 
 	return diags
 }
