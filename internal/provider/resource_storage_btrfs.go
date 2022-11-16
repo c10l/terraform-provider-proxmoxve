@@ -135,24 +135,24 @@ func (r *StorageBTRFSResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	postReq := storage.PostRequest{Client: r.client, Storage: data.Name.Value, StorageType: storage.TypeBTRFS, DirPath: &data.Path.Value}
-	if !data.Content.Null {
+	postReq := storage.PostRequest{Client: r.client, Storage: data.Name.ValueString(), StorageType: storage.TypeBTRFS, DirPath: helpers.PtrTo(data.Path.ValueString())}
+	if !data.Content.IsNull() {
 		if postReq.Content == nil {
 			postReq.Content = &[]string{}
 		}
 		resp.Diagnostics.Append(data.Content.ElementsAs(ctx, postReq.Content, false)...)
 	}
-	if !data.Nodes.Null {
+	if !data.Nodes.IsNull() {
 		if postReq.Nodes == nil {
 			postReq.Nodes = &[]string{}
 		}
 		resp.Diagnostics.Append(data.Nodes.ElementsAs(ctx, postReq.Nodes, false)...)
 	}
-	if !data.Disable.Null {
-		postReq.Disable = helpers.PtrTo(pvetypes.PVEBool(data.Disable.Value))
+	if !data.Disable.IsNull() {
+		postReq.Disable = helpers.PtrTo(pvetypes.PVEBool(data.Disable.ValueBool()))
 	}
-	if !data.Preallocation.Null {
-		postReq.Preallocation = &data.Preallocation.Value
+	if !data.Preallocation.IsNull() {
+		postReq.Preallocation = helpers.PtrTo(data.Preallocation.ValueString())
 	}
 	_, err := postReq.Post()
 	if err != nil {
@@ -160,7 +160,7 @@ func (r *StorageBTRFSResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: r.client, Storage: data.Name.Value}.Get()
+	storage, err := storage.ItemGetRequest{Client: r.client, Storage: data.Name.ValueString()}.Get()
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading storage_btrfs", err.Error())
 		return
@@ -183,10 +183,10 @@ func (r *StorageBTRFSResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: r.client, Storage: data.Name.Value}.Get()
+	storage, err := storage.ItemGetRequest{Client: r.client, Storage: data.Name.ValueString()}.Get()
 	if err != nil {
 		// If resource has been deleted outside of Terraform, we remove it from the plan state so it can be re-created.
-		if strings.Contains(err.Error(), fmt.Sprintf("500 storage '%s' does not exist", data.Name.Value)) {
+		if strings.Contains(err.Error(), fmt.Sprintf("500 storage '%s' does not exist", data.Name.ValueString())) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -209,24 +209,24 @@ func (r *StorageBTRFSResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 
-	putReq := storage.ItemPutRequest{Client: r.client, Storage: data.Name.Value}
-	if !data.Content.Null {
+	putReq := storage.ItemPutRequest{Client: r.client, Storage: data.Name.ValueString()}
+	if !data.Content.IsNull() {
 		if putReq.Content == nil {
 			putReq.Content = &[]string{}
 		}
 		resp.Diagnostics.Append(data.Content.ElementsAs(ctx, putReq.Content, false)...)
 	}
-	if !data.Nodes.Null {
+	if !data.Nodes.IsNull() {
 		if putReq.Nodes == nil {
 			putReq.Nodes = &[]string{}
 		}
 		resp.Diagnostics.Append(data.Nodes.ElementsAs(ctx, putReq.Nodes, false)...)
 	}
-	if !data.Disable.Null {
-		putReq.Disable = helpers.PtrTo(pvetypes.PVEBool(data.Disable.Value))
+	if !data.Disable.IsNull() {
+		putReq.Disable = helpers.PtrTo(pvetypes.PVEBool(data.Disable.ValueBool()))
 	}
-	if !data.Preallocation.Null {
-		putReq.Preallocation = &data.Preallocation.Value
+	if !data.Preallocation.IsNull() {
+		putReq.Preallocation = helpers.PtrTo(data.Preallocation.ValueString())
 	}
 	_, err := putReq.Put()
 	if err != nil {
@@ -234,7 +234,7 @@ func (r *StorageBTRFSResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: r.client, Storage: data.Name.Value}.Get()
+	storage, err := storage.ItemGetRequest{Client: r.client, Storage: data.Name.ValueString()}.Get()
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading storage_btrfs", err.Error())
 		return
@@ -258,7 +258,7 @@ func (r *StorageBTRFSResource) Delete(ctx context.Context, req resource.DeleteRe
 		return
 	}
 
-	err := storage.ItemDeleteRequest{Client: r.client, Storage: data.Name.Value}.Delete()
+	err := storage.ItemDeleteRequest{Client: r.client, Storage: data.Name.ValueString()}.Delete()
 	if err != nil {
 		resp.Diagnostics.AddError("Error deleting storage_btrfs", err.Error())
 		return
@@ -274,14 +274,14 @@ func (r *StorageBTRFSResource) convertAPIGetResponseToTerraform(ctx context.Cont
 	diags = append(diags, tfsdk.ValueFrom(ctx, apiData.Content, types.SetType{ElemType: types.StringType}, &tfData.Content)...)
 	diags = append(diags, tfsdk.ValueFrom(ctx, apiData.Nodes, types.SetType{ElemType: types.StringType}, &tfData.Nodes)...)
 
-	tfData.ID = types.String{Value: apiData.Storage}
-	tfData.Name = types.String{Value: apiData.Storage}
-	tfData.Path = types.String{Value: apiData.Path}
-	tfData.PruneBackups = types.String{Value: apiData.PruneBackups}
-	tfData.Type = types.String{Value: apiData.Type}
+	tfData.ID = types.StringValue(apiData.Storage)
+	tfData.Name = types.StringValue(apiData.Storage)
+	tfData.Path = types.StringValue(apiData.Path)
+	tfData.PruneBackups = types.StringValue(apiData.PruneBackups)
+	tfData.Type = types.StringValue(apiData.Type)
 
-	tfData.Disable = types.Bool{Value: apiData.Disable}
-	tfData.Preallocation = types.String{Value: apiData.Preallocation}
+	tfData.Disable = types.BoolValue(apiData.Disable)
+	tfData.Preallocation = types.StringValue(apiData.Preallocation)
 
 	return diags
 }

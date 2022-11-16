@@ -141,27 +141,27 @@ func (r *StorageDirResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	postReq := storage.PostRequest{Client: r.client, Storage: data.Name.Value, StorageType: storage.TypeDir, DirPath: &data.Path.Value}
-	if !data.Content.Null {
+	postReq := storage.PostRequest{Client: r.client, Storage: data.Name.ValueString(), StorageType: storage.TypeDir, DirPath: helpers.PtrTo(data.Path.ValueString())}
+	if !data.Content.IsNull() {
 		if postReq.Content == nil {
 			postReq.Content = &[]string{}
 		}
 		resp.Diagnostics.Append(data.Content.ElementsAs(ctx, postReq.Content, false)...)
 	}
-	if !data.Nodes.Null {
+	if !data.Nodes.IsNull() {
 		if postReq.Nodes == nil {
 			postReq.Nodes = &[]string{}
 		}
 		resp.Diagnostics.Append(data.Nodes.ElementsAs(ctx, postReq.Nodes, false)...)
 	}
-	if !data.Disable.Null {
-		postReq.Disable = helpers.PtrTo(pvetypes.PVEBool(data.Disable.Value))
+	if !data.Disable.IsNull() {
+		postReq.Disable = helpers.PtrTo(pvetypes.PVEBool(data.Disable.ValueBool()))
 	}
-	if !data.Shared.Null {
-		postReq.DirShared = helpers.PtrTo(pvetypes.PVEBool(data.Shared.Value))
+	if !data.Shared.IsNull() {
+		postReq.DirShared = helpers.PtrTo(pvetypes.PVEBool(data.Shared.ValueBool()))
 	}
-	if !data.Preallocation.Null {
-		postReq.Preallocation = &data.Preallocation.Value
+	if !data.Preallocation.IsNull() {
+		postReq.Preallocation = helpers.PtrTo(data.Preallocation.ValueString())
 	}
 	_, err := postReq.Post()
 	if err != nil {
@@ -169,7 +169,7 @@ func (r *StorageDirResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: r.client, Storage: data.Name.Value}.Get()
+	storage, err := storage.ItemGetRequest{Client: r.client, Storage: data.Name.ValueString()}.Get()
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading storage_dir", err.Error())
 		return
@@ -192,10 +192,10 @@ func (r *StorageDirResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: r.client, Storage: data.Name.Value}.Get()
+	storage, err := storage.ItemGetRequest{Client: r.client, Storage: data.Name.ValueString()}.Get()
 	if err != nil {
 		// If resource has been deleted outside of Terraform, we remove it from the plan state so it can be re-created.
-		if strings.Contains(err.Error(), fmt.Sprintf("500 storage '%s' does not exist", data.Name.Value)) {
+		if strings.Contains(err.Error(), fmt.Sprintf("500 storage '%s' does not exist", data.Name.ValueString())) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -218,27 +218,27 @@ func (r *StorageDirResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	putReq := storage.ItemPutRequest{Client: r.client, Storage: data.Name.Value}
-	if !data.Content.Null {
+	putReq := storage.ItemPutRequest{Client: r.client, Storage: data.Name.ValueString()}
+	if !data.Content.IsNull() {
 		if putReq.Content == nil {
 			putReq.Content = &[]string{}
 		}
 		resp.Diagnostics.Append(data.Content.ElementsAs(ctx, putReq.Content, false)...)
 	}
-	if !data.Nodes.Null {
+	if !data.Nodes.IsNull() {
 		if putReq.Nodes == nil {
 			putReq.Nodes = &[]string{}
 		}
 		resp.Diagnostics.Append(data.Nodes.ElementsAs(ctx, putReq.Nodes, false)...)
 	}
-	if !data.Disable.Null {
-		putReq.Disable = helpers.PtrTo(pvetypes.PVEBool(data.Disable.Value))
+	if !data.Disable.IsNull() {
+		putReq.Disable = helpers.PtrTo(pvetypes.PVEBool(data.Disable.ValueBool()))
 	}
-	if !data.Shared.Null {
-		putReq.Shared = helpers.PtrTo(pvetypes.PVEBool(data.Shared.Value))
+	if !data.Shared.IsNull() {
+		putReq.Shared = helpers.PtrTo(pvetypes.PVEBool(data.Shared.ValueBool()))
 	}
-	if !data.Preallocation.Null {
-		putReq.Preallocation = &data.Preallocation.Value
+	if !data.Preallocation.IsNull() {
+		putReq.Preallocation = helpers.PtrTo(data.Preallocation.ValueString())
 	}
 	_, err := putReq.Put()
 	if err != nil {
@@ -246,7 +246,7 @@ func (r *StorageDirResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: r.client, Storage: data.Name.Value}.Get()
+	storage, err := storage.ItemGetRequest{Client: r.client, Storage: data.Name.ValueString()}.Get()
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading storage_dir", err.Error())
 		return
@@ -270,7 +270,7 @@ func (r *StorageDirResource) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	err := storage.ItemDeleteRequest{Client: r.client, Storage: data.Name.Value}.Delete()
+	err := storage.ItemDeleteRequest{Client: r.client, Storage: data.Name.ValueString()}.Delete()
 	if err != nil {
 		resp.Diagnostics.AddError("Error deleting storage_dir", err.Error())
 		return
@@ -286,15 +286,15 @@ func (r *StorageDirResource) convertAPIGetResponseToTerraform(ctx context.Contex
 	diags = append(diags, tfsdk.ValueFrom(ctx, apiData.Content, types.SetType{ElemType: types.StringType}, &tfData.Content)...)
 	diags = append(diags, tfsdk.ValueFrom(ctx, apiData.Nodes, types.SetType{ElemType: types.StringType}, &tfData.Nodes)...)
 
-	tfData.ID = types.String{Value: apiData.Storage}
-	tfData.Name = types.String{Value: apiData.Storage}
-	tfData.Path = types.String{Value: apiData.Path}
-	tfData.PruneBackups = types.String{Value: apiData.PruneBackups}
-	tfData.Shared = types.Bool{Value: apiData.Shared}
-	tfData.Type = types.String{Value: apiData.Type}
+	tfData.ID = types.StringValue(apiData.Storage)
+	tfData.Name = types.StringValue(apiData.Storage)
+	tfData.Path = types.StringValue(apiData.Path)
+	tfData.PruneBackups = types.StringValue(apiData.PruneBackups)
+	tfData.Shared = types.BoolValue(apiData.Shared)
+	tfData.Type = types.StringValue(apiData.Type)
 
-	tfData.Disable = types.Bool{Value: apiData.Disable}
-	tfData.Preallocation = types.String{Value: apiData.Preallocation}
+	tfData.Disable = types.BoolValue(apiData.Disable)
+	tfData.Preallocation = types.StringValue(apiData.Preallocation)
 
 	return diags
 }

@@ -127,32 +127,26 @@ func (d *StorageDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: d.client, Storage: data.Name.Value}.Get()
+	storage, err := storage.ItemGetRequest{Client: d.client, Storage: data.Name.ValueString()}.Get()
 	if err != nil {
 		resp.Diagnostics.AddError("Error retrieving version", err.Error())
 		return
 	}
 
-	data.Content = types.Set{ElemType: types.StringType}
-	for _, v := range storage.Content {
-		value := types.String{Value: v}
-		data.Content.Elems = append(data.Content.Elems, value)
-	}
-	data.Nodes = types.Set{ElemType: types.StringType}
-	for _, v := range storage.Nodes {
-		value := types.String{Value: v}
-		data.Content.Elems = append(data.Nodes.Elems, value)
-	}
+	var diags diag.Diagnostics
+	data.Content, diags = types.SetValueFrom(ctx, types.StringType, storage.Content)
+	data.Nodes, diags = types.SetValueFrom(ctx, types.StringType, storage.Nodes)
+	resp.Diagnostics.Append(diags...)
 
-	data.ID = types.String{Value: storage.Storage}
-	data.Name = types.String{Value: storage.Storage}
-	data.Path = types.String{Value: storage.Path}
-	data.PruneBackups = types.String{Value: storage.PruneBackups}
-	data.Shared = types.Bool{Value: storage.Shared}
-	data.Type = types.String{Value: string(storage.Type)}
+	data.ID = types.StringValue(storage.Storage)
+	data.Name = types.StringValue(storage.Storage)
+	data.Path = types.StringValue(storage.Path)
+	data.PruneBackups = types.StringValue(storage.PruneBackups)
+	data.Shared = types.BoolValue(storage.Shared)
+	data.Type = types.StringValue(string(storage.Type))
 
-	data.Enabled = types.Bool{Value: !storage.Disable}
-	data.Preallocation = types.String{Value: storage.Preallocation}
+	data.Enabled = types.BoolValue(!storage.Disable)
+	data.Preallocation = types.StringValue(storage.Preallocation)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
 }

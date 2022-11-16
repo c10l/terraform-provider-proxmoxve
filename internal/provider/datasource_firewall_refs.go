@@ -124,14 +124,14 @@ func (d *FirewallRefsDataSource) Read(ctx context.Context, req datasource.ReadRe
 		return
 	}
 
-	data.ID = types.String{Value: time.Now().String()}
+	data.ID = types.StringValue(time.Now().String())
 	data.Refs = []firewallRefsDataSourceDataRefModel{}
 	for _, v := range *firewallRefs {
 		ref := firewallRefsDataSourceDataRefModel{}
-		ref.Comment = types.String{Value: v.Comment}
-		ref.Name = types.String{Value: v.Name}
-		ref.Ref = types.String{Value: v.Ref}
-		ref.Type = types.String{Value: v.Type}
+		ref.Comment = types.StringValue(v.Comment)
+		ref.Name = types.StringValue(v.Name)
+		ref.Ref = types.StringValue(v.Ref)
+		ref.Type = types.StringValue(v.Type)
 		data.Refs = append(data.Refs, ref)
 	}
 

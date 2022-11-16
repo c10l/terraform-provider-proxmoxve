@@ -6,6 +6,7 @@ import (
 
 	proxmox "github.com/c10l/proxmoxve-client-go/api"
 	"github.com/c10l/proxmoxve-client-go/api/cluster/firewall/aliases"
+	"github.com/c10l/proxmoxve-client-go/helpers"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -101,9 +102,9 @@ func (r *FirewallAliasResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	postReq := aliases.PostRequest{Client: r.client, Name: data.Name.Value, CIDR: data.CIDR.Value}
-	if !data.Comment.Null {
-		postReq.Comment = &data.Comment.Value
+	postReq := aliases.PostRequest{Client: r.client, Name: data.Name.ValueString(), CIDR: data.CIDR.ValueString()}
+	if !data.Comment.IsNull() {
+		postReq.Comment = helpers.PtrTo(data.Comment.ValueString())
 	}
 	err := postReq.Post()
 	if err != nil {
@@ -111,7 +112,7 @@ func (r *FirewallAliasResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	getResp, err := aliases.ItemGetRequest{Client: r.client, Name: data.Name.Value}.Get()
+	getResp, err := aliases.ItemGetRequest{Client: r.client, Name: data.Name.ValueString()}.Get()
 	if err != nil {
 		resp.Diagnostics.AddError("Error retrieving firewall_alias", err.Error())
 		return
@@ -128,9 +129,9 @@ func (r *FirewallAliasResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	alias, err := aliases.ItemGetRequest{Client: r.client, Name: data.Name.Value}.Get()
+	alias, err := aliases.ItemGetRequest{Client: r.client, Name: data.Name.ValueString()}.Get()
 	if err != nil {
-		resp.Diagnostics.AddError(fmt.Sprintf("Error reading firewall_alias.%s", data.Name.Value), err.Error())
+		resp.Diagnostics.AddError(fmt.Sprintf("Error reading firewall_alias.%s", data.Name.ValueString()), err.Error())
 		return
 	}
 
@@ -154,20 +155,20 @@ func (r *FirewallAliasResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	putReq := aliases.ItemPutRequest{Client: r.client, Name: state.Name.Value, CIDR: config.CIDR.Value}
-	if state.Name.Value != config.Name.Value {
-		putReq.Rename = &config.Name.Value
+	putReq := aliases.ItemPutRequest{Client: r.client, Name: state.Name.ValueString(), CIDR: config.CIDR.ValueString()}
+	if state.Name.ValueString() != config.Name.ValueString() {
+		putReq.Rename = helpers.PtrTo(config.Name.ValueString())
 	}
-	if !config.Comment.Null {
-		putReq.Comment = &config.Comment.Value
+	if !config.Comment.IsNull() {
+		putReq.Comment = helpers.PtrTo(config.Comment.ValueString())
 	}
 	err := putReq.Put()
 	if err != nil {
-		resp.Diagnostics.AddError(fmt.Sprintf("error updating firewall_alias.%s", state.Name.Value), err.Error())
+		resp.Diagnostics.AddError(fmt.Sprintf("error updating firewall_alias.%s", state.Name.ValueString()), err.Error())
 		return
 	}
 
-	getResp, err := aliases.ItemGetRequest{Client: r.client, Name: config.Name.Value}.Get()
+	getResp, err := aliases.ItemGetRequest{Client: r.client, Name: config.Name.ValueString()}.Get()
 	if err != nil {
 		resp.Diagnostics.AddError("Error retrieving firewall_alias", err.Error())
 		return
@@ -184,7 +185,7 @@ func (r *FirewallAliasResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	err := aliases.ItemDeleteRequest{Client: r.client, Name: data.Name.Value}.Delete()
+	err := aliases.ItemDeleteRequest{Client: r.client, Name: data.Name.ValueString()}.Delete()
 	if err != nil {
 		resp.Diagnostics.AddError("Error deleting firewall_alias", err.Error())
 		return
@@ -196,10 +197,10 @@ func (r *FirewallAliasResource) ImportState(ctx context.Context, req resource.Im
 }
 
 func (r *FirewallAliasResource) convertAPIGetResponseToTerraform(ctx context.Context, apiData aliases.ItemGetResponse, tfData *FirewallAliasResourceModel) {
-	tfData.ID = types.String{Value: apiData.Name}
-	tfData.Name = types.String{Value: apiData.Name}
-	tfData.CIDR = types.String{Value: apiData.CIDR}
+	tfData.ID = types.StringValue(apiData.Name)
+	tfData.Name = types.StringValue(apiData.Name)
+	tfData.CIDR = types.StringValue(apiData.CIDR)
 	if apiData.Comment != nil {
-		tfData.Comment = types.String{Value: *apiData.Comment}
+		tfData.Comment = types.StringValue(*apiData.Comment)
 	}
 }
