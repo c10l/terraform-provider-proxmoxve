@@ -16,7 +16,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -53,43 +55,37 @@ func (r *ACMEPluginResource) Metadata(ctx context.Context, req resource.Metadata
 	resp.TypeName = req.ProviderTypeName + "_acme_plugin"
 }
 
-func (r *ACMEPluginResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
-		Attributes: map[string]tfsdk.Attribute{
-			"id": {
+func (r *ACMEPluginResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
 				Computed: true,
-				Type:     types.StringType,
 			},
-			"name": {
+			"name": schema.StringAttribute{
 				Required:      true,
-				Type:          types.StringType,
-				PlanModifiers: []tfsdk.AttributePlanModifier{resource.RequiresReplace()},
+				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
 			},
-			"type": {
+			"type": schema.StringAttribute{
 				Required:      true,
-				Type:          types.StringType,
-				PlanModifiers: []tfsdk.AttributePlanModifier{resource.RequiresReplace()},
+				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
 			},
-			"api": {
+			"api": schema.StringAttribute{
 				Optional: true,
-				Type:     types.StringType,
 			},
-			"data": {
+			"data": schema.StringAttribute{
 				Optional: true,
-				Type:     types.StringType,
 			},
-			"disable": {
+			"disable": schema.BoolAttribute{
 				Optional: true,
 				Computed: true,
-				Type:     types.BoolType,
 			},
-			"nodes": {
-				Type:     types.SetType{ElemType: types.StringType},
-				Optional: true,
-				Computed: true,
+			"nodes": schema.SetAttribute{
+				ElementType: types.StringType,
+				Optional:    true,
+				Computed:    true,
 			},
 		},
-	}, nil
+	}
 }
 
 func (r *ACMEPluginResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {

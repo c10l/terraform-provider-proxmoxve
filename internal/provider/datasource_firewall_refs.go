@@ -8,8 +8,7 @@ import (
 	proxmox "github.com/c10l/proxmoxve-client-go/api"
 	"github.com/c10l/proxmoxve-client-go/api/cluster/firewall/refs"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -42,42 +41,36 @@ func (d *FirewallRefsDataSource) Metadata(ctx context.Context, req datasource.Me
 	resp.TypeName = req.ProviderTypeName + "_firewall_refs"
 }
 
-func (d *FirewallRefsDataSource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
+func (d *FirewallRefsDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	resp.Schema = schema.Schema{
 		MarkdownDescription: "Lists possible IPSet/Alias reference which are allowed in source/dest properties.",
-		Attributes: map[string]tfsdk.Attribute{
-			"id": {
-				Type:     types.StringType,
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
 				Computed: true,
 			},
-			"type": {
-				Type:                types.StringType,
+			"type": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "Only list references of specified type. Accepted values: `alias`, `ipset`",
 			},
-			"refs": {
+			"refs": schema.ListNestedAttribute{
 				Computed: true,
-				Attributes: tfsdk.ListNestedAttributes(map[string]tfsdk.Attribute{
-					"name": {
-						Type:     types.StringType,
+				NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
+					"name": schema.StringAttribute{
 						Computed: true,
 					},
-					"ref": {
-						Type:     types.StringType,
+					"ref": schema.StringAttribute{
 						Computed: true,
 					},
-					"type": {
-						Type:     types.StringType,
+					"type": schema.StringAttribute{
 						Computed: true,
 					},
-					"comment": {
-						Type:     types.StringType,
+					"comment": schema.StringAttribute{
 						Computed: true,
 					},
-				}),
+				}},
 			},
 		},
-	}, nil
+	}
 }
 
 func (d *FirewallRefsDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {

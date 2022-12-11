@@ -8,9 +8,8 @@ import (
 	version "github.com/c10l/proxmoxve-client-go/api/version"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -39,36 +38,31 @@ func (d *VersionDataSource) Metadata(ctx context.Context, req datasource.Metadat
 }
 
 // Version data source schema
-func (d *VersionDataSource) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
+func (d *VersionDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	resp.Schema = schema.Schema{
 		MarkdownDescription: "API version details, including some parts of the global datacenter config.",
-		Attributes: map[string]tfsdk.Attribute{
-			"id": {
-				Type:     types.StringType,
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
 				Computed: true,
 			},
-			"release": {
-				Type:                types.StringType,
+			"release": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The current Proxmox VE point release in `x.y` format",
 			},
-			"repoid": {
-				Type:                types.StringType,
+			"repoid": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The short git revision from which this version was build",
 			},
-			"version": {
-				Type:                types.StringType,
+			"version": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The full pve-manager package version of this node",
 			},
-			"console": {
-				Type:                types.StringType,
+			"console": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The default console viewer to use. One of `applet`, `vv`, `html5`, `xtermjs`",
 			},
 		},
-	}, nil
+	}
 }
 
 func (d *VersionDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {

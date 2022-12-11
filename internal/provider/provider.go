@@ -8,10 +8,9 @@ import (
 
 	proxmox "github.com/c10l/proxmoxve-client-go/api"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -43,40 +42,35 @@ func (p *ProxmoxVEProvider) Metadata(ctx context.Context, req provider.MetadataR
 }
 
 // GetSchema
-func (p *ProxmoxVEProvider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
+func (p *ProxmoxVEProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
+	resp.Schema = schema.Schema{
 		MarkdownDescription: "The following environment variables can be set as a fallback for any omitted attributes in the provider declaration: `PROXMOXVE_BASE_URL`, `PROXMOXVE_TOKEN_ID`, `PROXMOXVE_SECRET`, `PROXMOXVE_ROOT_PASSWORD`, `PROXMOXVE_TLS_INSECURE`.</p>" +
 			"**NOTE:** `base_url` attribute is always required. Additionally, most API endpoints require `token_id` and `secret`, whilst some require `root_password`. The latter will be documented in the resource.",
-		Attributes: map[string]tfsdk.Attribute{
-			"base_url": {
-				Type:                types.StringType,
+		Attributes: map[string]schema.Attribute{
+			"base_url": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "Base URL of the Proxmox VE API server. e.g. https://pmve.example.com:8006",
 			},
-			"token_id": {
-				Type:                types.StringType,
+			"token_id": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "API token ID. e.g. `user@pam!token_name`",
 			},
-			"secret": {
-				Type:                types.StringType,
+			"secret": schema.StringAttribute{
 				Optional:            true,
 				Sensitive:           true,
 				MarkdownDescription: "API Token secret",
 			},
-			"root_password": {
-				Type:                types.StringType,
+			"root_password": schema.StringAttribute{
 				Optional:            true,
 				Sensitive:           true,
 				MarkdownDescription: "Password of the `root` user. Some API endpoints can only be called via a ticket which must be acquired as the `root@pam` user (as opposed to an API token). e.g. the ACME endpoits",
 			},
-			"tls_insecure": {
-				Type:                types.BoolType,
+			"tls_insecure": schema.BoolAttribute{
 				Optional:            true,
 				MarkdownDescription: "Set to `true` to bypass TLS cert validation. Defaults to `false`",
 			},
 		},
-	}, nil
+	}
 }
 
 // Configure -

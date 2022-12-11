@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -53,51 +54,44 @@ func (r *StorageBTRFSResource) Metadata(ctx context.Context, req resource.Metada
 	resp.TypeName = req.ProviderTypeName + "_storage_btrfs"
 }
 
-func (r *StorageBTRFSResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
-		Attributes: map[string]tfsdk.Attribute{
-			"id": {
+func (r *StorageBTRFSResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
 				Computed: true,
-				Type:     types.StringType,
 			},
-			"name": {
-				Type:     types.StringType,
+			"name": schema.StringAttribute{
 				Required: true,
 			},
-			"path": {
-				Type:     types.StringType,
+			"path": schema.StringAttribute{
 				Required: true,
 			},
-			"content": {
-				Type:     types.SetType{ElemType: types.StringType},
+			"content": schema.SetAttribute{
+				ElementType: types.StringType,
+				Optional:    true,
+				Computed:    true,
+			},
+			"nodes": schema.SetAttribute{
+				ElementType: types.StringType,
+				Optional:    true,
+				Computed:    true,
+			},
+			"disable": schema.BoolAttribute{
 				Optional: true,
 				Computed: true,
 			},
-			"nodes": {
-				Type:     types.SetType{ElemType: types.StringType},
+			"preallocation": schema.StringAttribute{
 				Optional: true,
 				Computed: true,
 			},
-			"disable": {
-				Type:     types.BoolType,
-				Optional: true,
+			"type": schema.StringAttribute{
 				Computed: true,
 			},
-			"preallocation": {
-				Type:     types.StringType,
-				Optional: true,
-				Computed: true,
-			},
-			"type": {
-				Type:     types.StringType,
-				Computed: true,
-			},
-			"prune_backups": {
-				Type:     types.StringType,
+			"prune_backups": schema.StringAttribute{
 				Computed: true,
 			},
 		},
-	}, nil
+	}
 }
 
 func (r *StorageBTRFSResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {

@@ -10,10 +10,11 @@ import (
 	proxmox "github.com/c10l/proxmoxve-client-go/api"
 	"github.com/c10l/proxmoxve-client-go/api/cluster/acme/account"
 	"github.com/c10l/proxmoxve-client-go/helpers"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -48,39 +49,34 @@ func (r *ACMEAccountResource) Metadata(ctx context.Context, req resource.Metadat
 	resp.TypeName = req.ProviderTypeName + "_acme_account"
 }
 
-func (r *ACMEAccountResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
+func (r *ACMEAccountResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{
 		MarkdownDescription: "Define an ACME account with CA." + docRequiresRoot,
-		Attributes: map[string]tfsdk.Attribute{
-			"id": {
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
 				Computed: true,
-				Type:     types.StringType,
 			},
-			"name": {
+			"name": schema.StringAttribute{
 				Required:            true,
-				Type:                types.StringType,
-				PlanModifiers:       []tfsdk.AttributePlanModifier{resource.RequiresReplace()},
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.RequiresReplace()},
 				MarkdownDescription: "Name of the account in Proxmox VE.",
 			},
-			"contact": {
+			"contact": schema.StringAttribute{
 				Required:            true,
-				Type:                types.StringType,
 				MarkdownDescription: "Contact email addresses.",
 			},
-			"directory": {
+			"directory": schema.StringAttribute{
 				Optional:            true,
-				Type:                types.StringType,
-				PlanModifiers:       []tfsdk.AttributePlanModifier{resource.RequiresReplace()},
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.RequiresReplace()},
 				MarkdownDescription: "URL of ACME CA directory endpoint. Defaults to the production directory of Let's Encrypt.",
 			},
-			"tos_url": {
+			"tos_url": schema.StringAttribute{
 				Optional:            true,
-				Type:                types.StringType,
-				PlanModifiers:       []tfsdk.AttributePlanModifier{resource.RequiresReplace()},
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.RequiresReplace()},
 				MarkdownDescription: "URL of CA TermsOfService - setting this indicates agreement.",
 			},
 		},
-	}, nil
+	}
 }
 
 func (r *ACMEAccountResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {

@@ -7,8 +7,8 @@ import (
 	proxmox "github.com/c10l/proxmoxve-client-go/api"
 	"github.com/c10l/proxmoxve-client-go/api/storage"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -41,52 +41,44 @@ func (d *StorageDataSource) Metadata(ctx context.Context, req datasource.Metadat
 	resp.TypeName = req.ProviderTypeName + "_storage"
 }
 
-func (d *StorageDataSource) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
-		Attributes: map[string]tfsdk.Attribute{
-			"id": {
-				Type:     types.StringType,
+func (d *StorageDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
 				Computed: true,
 			},
-			"name": {
-				Type:                types.StringType,
+			"name": schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The storage identifier",
 			},
-			"type": {
-				Type:     types.StringType,
+			"type": schema.StringAttribute{
 				Computed: true,
 			},
-			"content": {
-				Type:     types.SetType{ElemType: types.StringType},
+			"content": schema.SetAttribute{
+				Computed:    true,
+				ElementType: types.StringType,
+			},
+			"path": schema.StringAttribute{
 				Computed: true,
 			},
-			"path": {
-				Type:     types.StringType,
+			"prune_backups": schema.StringAttribute{
 				Computed: true,
 			},
-			"prune_backups": {
-				Type:     types.StringType,
+			"shared": schema.BoolAttribute{
 				Computed: true,
 			},
-			"shared": {
-				Type:     types.BoolType,
+			"nodes": schema.SetAttribute{
+				Computed:    true,
+				ElementType: types.StringType,
+			},
+			"enabled": schema.BoolAttribute{
 				Computed: true,
 			},
-			"nodes": {
-				Type:     types.SetType{ElemType: types.StringType},
-				Computed: true,
-			},
-			"enabled": {
-				Type:     types.BoolType,
-				Computed: true,
-			},
-			"preallocation": {
-				Type:     types.StringType,
+			"preallocation": schema.StringAttribute{
 				Computed: true,
 			},
 		},
-	}, nil
+	}
 }
 
 func (d *StorageDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
@@ -135,6 +127,7 @@ func (d *StorageDataSource) Read(ctx context.Context, req datasource.ReadRequest
 
 	var diags diag.Diagnostics
 	data.Content, diags = types.SetValueFrom(ctx, types.StringType, storage.Content)
+	resp.Diagnostics.Append(diags...)
 	data.Nodes, diags = types.SetValueFrom(ctx, types.StringType, storage.Nodes)
 	resp.Diagnostics.Append(diags...)
 

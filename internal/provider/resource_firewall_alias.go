@@ -7,10 +7,9 @@ import (
 	proxmox "github.com/c10l/proxmoxve-client-go/api"
 	"github.com/c10l/proxmoxve-client-go/api/cluster/firewall/aliases"
 	"github.com/c10l/proxmoxve-client-go/helpers"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -40,31 +39,26 @@ func (r *FirewallAliasResource) Metadata(ctx context.Context, req resource.Metad
 	resp.TypeName = req.ProviderTypeName + "_firewall_alias"
 }
 
-func (r *FirewallAliasResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
-		Attributes: map[string]tfsdk.Attribute{
-			"id": {
+func (r *FirewallAliasResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
 				Computed: true,
-				Type:     types.StringType,
 			},
-			"name": {
+			"name": schema.StringAttribute{
 				Required: true,
-				Type:     types.StringType,
 			},
-			"cidr": {
+			"cidr": schema.StringAttribute{
 				Required: true,
-				Type:     types.StringType,
 			},
-			"digest": {
+			"digest": schema.StringAttribute{
 				Computed: true,
-				Type:     types.StringType,
 			},
-			"comment": {
+			"comment": schema.StringAttribute{
 				Optional: true,
-				Type:     types.StringType,
 			},
 		},
-	}, nil
+	}
 }
 
 func (r *FirewallAliasResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
