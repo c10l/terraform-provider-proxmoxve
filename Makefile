@@ -4,8 +4,15 @@ NAMESPACE=c10l
 NAME=proxmoxve
 BINARY=terraform-provider-${NAME}
 VERSION=0.0.1
-OS_ARCH=darwin_arm64
 TESTNAME?=.*
+
+UNAME := $(shell uname -m)
+ifeq ($(UNAME),aarch64)
+OS_ARCH := darwin_arm64
+endif
+ifeq ($(UNAME),x86_64)
+OS_ARCH := linux_amd64
+endif
 
 default: install
 
