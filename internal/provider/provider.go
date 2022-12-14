@@ -16,7 +16,6 @@ import (
 
 // Ensure ProxmoxVEProvider satisfies various provider interfaces.
 var _ provider.Provider = &ProxmoxVEProvider{}
-var _ provider.ProviderWithMetadata = &ProxmoxVEProvider{}
 
 type getClientFunc func() (*proxmox.Client, error)
 
