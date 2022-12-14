@@ -128,7 +128,10 @@ func (r *ACMEAccountResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	r.eventuallyGet(ctx, data, 1*time.Second)
+	if _, err := r.eventuallyGet(ctx, data, 5*time.Second); err != nil {
+		resp.Diagnostics.AddError(fmt.Sprintf("acme_account.%s not created", data.Name.ValueString()), err.Error())
+		return
+	}
 
 	tflog.Trace(ctx, "created resource")
 
