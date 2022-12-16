@@ -1,1 +1,1 @@
-data "version" "current" {}
+data "proxmoxve_version" "current" {}
