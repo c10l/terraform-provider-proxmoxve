@@ -13,6 +13,14 @@ The following environment variables can be set as a fallback for any omitted att
 ## Example Usage
 
 ```terraform
+terraform {
+  required_providers {
+    proxmoxve = {
+      source = "c10l/proxmoxve"
+    }
+  }
+}
+
 provider "proxmoxve" {
   base_url      = "https://pmve.example.com:8006"
   token_id      = "apiuser@pam!proxmoxve_terraform_token"
