@@ -7,7 +7,7 @@ go 1.19
 require (
 	github.com/c10l/proxmoxve-client-go v0.0.0-20220823091240-1b1e8c48eb9f
 	github.com/hashicorp/terraform-plugin-docs v0.13.0
-	github.com/hashicorp/terraform-plugin-framework v1.0.0
+	github.com/hashicorp/terraform-plugin-framework v1.0.1
 	github.com/hashicorp/terraform-plugin-go v0.14.2
 	github.com/hashicorp/terraform-plugin-log v0.7.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.24.1
