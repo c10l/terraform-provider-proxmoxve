@@ -45,7 +45,8 @@ func (d *FirewallAliasDataSource) Schema(ctx context.Context, req datasource.Sch
 				Computed: true,
 			},
 			"name": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				MarkdownDescription: "Name of the firewall alias to retrieve",
 			},
 			"cidr": schema.StringAttribute{
 				Computed: true,
