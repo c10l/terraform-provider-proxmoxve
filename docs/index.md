@@ -3,12 +3,12 @@
 page_title: "proxmoxve Provider"
 subcategory: ""
 description: |-
-  The following environment variables can be set as a fallback for any omitted attributes in the provider declaration: PROXMOXVE_BASE_URL, PROXMOXVE_TOKEN_ID, PROXMOXVE_SECRET, PROXMOXVE_ROOT_PASSWORD, PROXMOXVE_TLS_INSECURE.NOTE: base_url attribute is always required. Additionally, most API endpoints require token_id and secret, whilst some require root_password. The latter will be documented in the resource.
+  The following environment variables can be set as a fallback for any omitted attributes in the provider declaration: PROXMOXVE_BASE_URL, PROXMOXVE_TOKEN_ID, PROXMOXVE_SECRET, PROXMOXVE_ROOT_PASSWORD, PROXMOXVE_TOTPSEED, PROXMOXVE_TLS_INSECURE.NOTE: base_url attribute is always required. Additionally, most API endpoints require token_id and secret. Other API endpoints require root_password, and if 2FA is enabled for the root user, totp_seed must also be informed.
 ---
 
 # proxmoxve Provider
 
-The following environment variables can be set as a fallback for any omitted attributes in the provider declaration: `PROXMOXVE_BASE_URL`, `PROXMOXVE_TOKEN_ID`, `PROXMOXVE_SECRET`, `PROXMOXVE_ROOT_PASSWORD`, `PROXMOXVE_TLS_INSECURE`.</p>**NOTE:** `base_url` attribute is always required. Additionally, most API endpoints require `token_id` and `secret`, whilst some require `root_password`. The latter will be documented in the resource.
+The following environment variables can be set as a fallback for any omitted attributes in the provider declaration: `PROXMOXVE_BASE_URL`, `PROXMOXVE_TOKEN_ID`, `PROXMOXVE_SECRET`, `PROXMOXVE_ROOT_PASSWORD`, `PROXMOXVE_TOTPSEED`, `PROXMOXVE_TLS_INSECURE`.</p>**NOTE:** `base_url` attribute is always required. Additionally, most API endpoints require `token_id` and `secret`. Other API endpoints require `root_password`, and if 2FA is enabled for the `root` user, `totp_seed` must also be informed.
 
 ## Example Usage
 
@@ -40,3 +40,4 @@ provider "proxmoxve" {
 - `secret` (String, Sensitive) API Token secret
 - `tls_insecure` (Boolean) Set to `true` to bypass TLS cert validation. Defaults to `false`
 - `token_id` (String) API token ID. e.g. `user@pam!token_name`
+- `totp_seed` (String, Sensitive) If the `root` user has 2FA enabled, please inform the seed used to generate the OTPs. At the moment no other methods of 2FA are supported.

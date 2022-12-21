@@ -32,6 +32,7 @@ type ProxmoxVEProviderModel struct {
 	TokenID      types.String `tfsdk:"token_id"`
 	Secret       types.String `tfsdk:"secret"`
 	RootPassword types.String `tfsdk:"root_password"`
+	TOTPSeed     types.String `tfsdk:"totp_seed"`
 	TLSInsecure  types.Bool   `tfsdk:"tls_insecure"`
 }
 
@@ -43,8 +44,8 @@ func (p *ProxmoxVEProvider) Metadata(ctx context.Context, req provider.MetadataR
 // GetSchema
 func (p *ProxmoxVEProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "The following environment variables can be set as a fallback for any omitted attributes in the provider declaration: `PROXMOXVE_BASE_URL`, `PROXMOXVE_TOKEN_ID`, `PROXMOXVE_SECRET`, `PROXMOXVE_ROOT_PASSWORD`, `PROXMOXVE_TLS_INSECURE`.</p>" +
-			"**NOTE:** `base_url` attribute is always required. Additionally, most API endpoints require `token_id` and `secret`, whilst some require `root_password`. The latter will be documented in the resource.",
+		MarkdownDescription: "The following environment variables can be set as a fallback for any omitted attributes in the provider declaration: `PROXMOXVE_BASE_URL`, `PROXMOXVE_TOKEN_ID`, `PROXMOXVE_SECRET`, `PROXMOXVE_ROOT_PASSWORD`, `PROXMOXVE_TOTPSEED`, `PROXMOXVE_TLS_INSECURE`.</p>" +
+			"**NOTE:** `base_url` attribute is always required. Additionally, most API endpoints require `token_id` and `secret`. Other API endpoints require `root_password`, and if 2FA is enabled for the `root` user, `totp_seed` must also be informed.",
 		Attributes: map[string]schema.Attribute{
 			"base_url": schema.StringAttribute{
 				Optional:            true,
@@ -63,6 +64,11 @@ func (p *ProxmoxVEProvider) Schema(ctx context.Context, req provider.SchemaReque
 				Optional:            true,
 				Sensitive:           true,
 				MarkdownDescription: "Password of the `root` user. Some API endpoints can only be called via a ticket which must be acquired as the `root@pam` user (as opposed to an API token). e.g. the ACME endpoits",
+			},
+			"totp_seed": schema.StringAttribute{
+				Optional:            true,
+				Sensitive:           true,
+				MarkdownDescription: "If the `root` user has 2FA enabled, please inform the seed used to generate the OTPs. At the moment no other methods of 2FA are supported.",
 			},
 			"tls_insecure": schema.BoolAttribute{
 				Optional:            true,
@@ -118,13 +124,13 @@ func (p *ProxmoxVEProvider) Configure(ctx context.Context, req provider.Configur
 
 	clients := map[string]getClientFunc{
 		"token": getTokenClientFunc(baseURL, tlsInsecure, data.TokenID, data.Secret),
-		"root":  getRootClientFunc(baseURL, tlsInsecure, data.RootPassword),
+		"root":  getRootClientFunc(baseURL, tlsInsecure, data.RootPassword, data.TOTPSeed),
 	}
 	resp.DataSourceData = clients
 	resp.ResourceData = clients
 }
 
-func getRootClientFunc(baseURL string, insecure bool, rootPassword types.String) func() (*proxmox.Client, error) {
+func getRootClientFunc(baseURL string, insecure bool, rootPassword, totpSeed types.String) func() (*proxmox.Client, error) {
 	return func() (*proxmox.Client, error) {
 		pwd := rootPassword.ValueString()
 		if rootPassword.IsNull() {
@@ -134,7 +140,12 @@ func getRootClientFunc(baseURL string, insecure bool, rootPassword types.String)
 			}
 		}
 
-		rootClient, err := proxmox.NewTicketClient(baseURL, "root@pam", pwd, insecure)
+		totpSd := totpSeed.ValueString()
+		if totpSeed.IsNull() {
+			totpSd = os.Getenv("PROXMOXVE_TOTPSEED")
+		}
+
+		rootClient, err := proxmox.NewTicketClient(baseURL, "root@pam", pwd, totpSd, insecure)
 		if err != nil {
 			return nil, errors.New("unable to create ProxMox VE client with root@pam user and password:\n\n" + err.Error())
 		}
