@@ -121,7 +121,7 @@ func (d *StorageDataSource) Read(ctx context.Context, req datasource.ReadRequest
 
 	storage, err := storage.ItemGetRequest{Client: d.client, Storage: data.Name.ValueString()}.Get()
 	if err != nil {
-		resp.Diagnostics.AddError("Error retrieving version", err.Error())
+		resp.Diagnostics.AddError("Error retrieving storage", err.Error())
 		return
 	}
 

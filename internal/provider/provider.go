@@ -198,6 +198,7 @@ func (p *ProxmoxVEProvider) DataSources(ctx context.Context) []func() datasource
 		NewVersionDataSource,
 		NewStorageDataSource,
 		NewFirewallRefsDataSource,
+		NewFirewallAliasDataSource,
 	}
 }
 
