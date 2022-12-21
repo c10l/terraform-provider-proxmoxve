@@ -24,7 +24,7 @@ data "proxmoxve_firewall_alias" "alias" {
 
 ### Required
 
-- `name` (String)
+- `name` (String) Name of the firewall alias to retrieve
 
 ### Read-Only
 
