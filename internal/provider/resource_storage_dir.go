@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	proxmox "github.com/c10l/proxmoxve-client-go/api"
+	"github.com/c10l/proxmoxve-client-go/api"
 	"github.com/c10l/proxmoxve-client-go/api/storage"
 	"github.com/c10l/proxmoxve-client-go/helpers"
 	pvetypes "github.com/c10l/proxmoxve-client-go/helpers/types"
@@ -28,7 +28,7 @@ func NewStorageDirResource() resource.Resource {
 
 // StorageDirResource defines the resource implementation.
 type StorageDirResource struct {
-	client *proxmox.Client
+	client *api.Client
 }
 
 // StorageDirResource describes the resource data model.
@@ -51,8 +51,10 @@ type StorageDirResourceModel struct {
 	PruneBackups types.String `tfsdk:"prune_backups"`
 }
 
+func (r *StorageDirResource) typeName() string { return "storage_dir" }
+
 func (r *StorageDirResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_storage_dir"
+	resp.TypeName = req.ProviderTypeName + "_" + r.typeName()
 }
 
 func (r *StorageDirResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -158,13 +160,13 @@ func (r *StorageDirResource) Create(ctx context.Context, req resource.CreateRequ
 	}
 	_, err := postReq.Post()
 	if err != nil {
-		resp.Diagnostics.AddError("Error creating storage_dir", err.Error())
+		resp.Diagnostics.AddError("Error creating "+r.typeName(), err.Error())
 		return
 	}
 
 	storage, err := storage.ItemGetRequest{Client: r.client, Storage: data.Name.ValueString()}.Get()
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading storage_dir", err.Error())
+		resp.Diagnostics.AddError("Error reading "+r.typeName(), err.Error())
 		return
 	}
 
@@ -173,7 +175,7 @@ func (r *StorageDirResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	tflog.Trace(ctx, "created storage_dir")
+	tflog.Trace(ctx, "created "+r.typeName())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
 }
@@ -185,18 +187,23 @@ func (r *StorageDirResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: r.client, Storage: data.Name.ValueString()}.Get()
+	item, err := storage.ItemGetRequest{Client: r.client, Storage: data.Name.ValueString()}.Get()
 	if err != nil {
 		// If resource has been deleted outside of Terraform, we remove it from the plan state so it can be re-created.
 		if strings.Contains(err.Error(), fmt.Sprintf("500 storage '%s' does not exist", data.Name.ValueString())) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
-		resp.Diagnostics.AddError("Error reading storage_dir", err.Error())
+		resp.Diagnostics.AddError("Error reading "+r.typeName(), err.Error())
 		return
 	}
 
-	resp.Diagnostics.Append(r.convertAPIGetResponseToTerraform(ctx, *storage, data)...)
+	if item.Type != storage.TypeDir {
+		resp.Diagnostics.AddError("Wrong storage type", fmt.Sprintf("Storage %s is of type %s but is declared as "+r.typeName(), data.Name.ValueString(), item.Type))
+		return
+	}
+
+	resp.Diagnostics.Append(r.convertAPIGetResponseToTerraform(ctx, *item, data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -235,13 +242,13 @@ func (r *StorageDirResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 	_, err := putReq.Put()
 	if err != nil {
-		resp.Diagnostics.AddError("Error creating storage_dir", err.Error())
+		resp.Diagnostics.AddError("Error creating "+r.typeName(), err.Error())
 		return
 	}
 
 	storage, err := storage.ItemGetRequest{Client: r.client, Storage: data.Name.ValueString()}.Get()
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading storage_dir", err.Error())
+		resp.Diagnostics.AddError("Error reading "+r.typeName(), err.Error())
 		return
 	}
 
@@ -250,7 +257,7 @@ func (r *StorageDirResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	tflog.Trace(ctx, "updated storage_dir")
+	tflog.Trace(ctx, "updated "+r.typeName())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
 }
@@ -265,7 +272,7 @@ func (r *StorageDirResource) Delete(ctx context.Context, req resource.DeleteRequ
 
 	err := storage.ItemDeleteRequest{Client: r.client, Storage: data.Name.ValueString()}.Delete()
 	if err != nil {
-		resp.Diagnostics.AddError("Error deleting storage_dir", err.Error())
+		resp.Diagnostics.AddError("Error deleting "+r.typeName(), err.Error())
 		return
 	}
 }

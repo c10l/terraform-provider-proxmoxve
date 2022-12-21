@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	proxmox "github.com/c10l/proxmoxve-client-go/api"
+	"github.com/c10l/proxmoxve-client-go/api"
 	"github.com/c10l/proxmoxve-client-go/api/storage"
 	"github.com/c10l/proxmoxve-client-go/helpers"
 	pvetypes "github.com/c10l/proxmoxve-client-go/helpers/types"
@@ -28,7 +28,7 @@ func NewStorageBTRFSResource() resource.Resource {
 
 // StorageBTRFSResource defines the resource implementation.
 type StorageBTRFSResource struct {
-	client *proxmox.Client
+	client *api.Client
 }
 
 // StorageBTRFSResource describes the resource data model.
@@ -50,8 +50,10 @@ type StorageBTRFSResourceModel struct {
 	PruneBackups types.String `tfsdk:"prune_backups"`
 }
 
+func (r *StorageBTRFSResource) typeName() string { return "storage_btrfs" }
+
 func (r *StorageBTRFSResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_storage_btrfs"
+	resp.TypeName = req.ProviderTypeName + "_" + r.typeName()
 }
 
 func (r *StorageBTRFSResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -150,13 +152,13 @@ func (r *StorageBTRFSResource) Create(ctx context.Context, req resource.CreateRe
 	}
 	_, err := postReq.Post()
 	if err != nil {
-		resp.Diagnostics.AddError("Error creating storage_btrfs", err.Error())
+		resp.Diagnostics.AddError("Error creating "+r.typeName(), err.Error())
 		return
 	}
 
 	storage, err := storage.ItemGetRequest{Client: r.client, Storage: data.Name.ValueString()}.Get()
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading storage_btrfs", err.Error())
+		resp.Diagnostics.AddError("Error reading "+r.typeName(), err.Error())
 		return
 	}
 
@@ -165,7 +167,7 @@ func (r *StorageBTRFSResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	tflog.Trace(ctx, "created storage_btrfs")
+	tflog.Trace(ctx, "created "+r.typeName())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
 }
@@ -177,18 +179,23 @@ func (r *StorageBTRFSResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	storage, err := storage.ItemGetRequest{Client: r.client, Storage: data.Name.ValueString()}.Get()
+	item, err := storage.ItemGetRequest{Client: r.client, Storage: data.Name.ValueString()}.Get()
 	if err != nil {
 		// If resource has been deleted outside of Terraform, we remove it from the plan state so it can be re-created.
 		if strings.Contains(err.Error(), fmt.Sprintf("500 storage '%s' does not exist", data.Name.ValueString())) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
-		resp.Diagnostics.AddError("Error reading storage_btrfs", err.Error())
+		resp.Diagnostics.AddError("Error reading "+r.typeName(), err.Error())
 		return
 	}
 
-	resp.Diagnostics.Append(r.convertAPIGetResponseToTerraform(ctx, *storage, data)...)
+	if item.Type != storage.TypeBTRFS {
+		resp.Diagnostics.AddError("Wrong storage type", fmt.Sprintf("Storage %s is of type %s but is declared as "+r.typeName(), data.Name.ValueString(), item.Type))
+		return
+	}
+
+	resp.Diagnostics.Append(r.convertAPIGetResponseToTerraform(ctx, *item, data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -224,13 +231,13 @@ func (r *StorageBTRFSResource) Update(ctx context.Context, req resource.UpdateRe
 	}
 	_, err := putReq.Put()
 	if err != nil {
-		resp.Diagnostics.AddError("Error creating storage_btrfs", err.Error())
+		resp.Diagnostics.AddError("Error creating "+r.typeName(), err.Error())
 		return
 	}
 
 	storage, err := storage.ItemGetRequest{Client: r.client, Storage: data.Name.ValueString()}.Get()
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading storage_btrfs", err.Error())
+		resp.Diagnostics.AddError("Error reading "+r.typeName(), err.Error())
 		return
 	}
 
@@ -239,7 +246,7 @@ func (r *StorageBTRFSResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 
-	tflog.Trace(ctx, "updated storage_btrfs")
+	tflog.Trace(ctx, "updated "+r.typeName())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
 }
@@ -254,7 +261,7 @@ func (r *StorageBTRFSResource) Delete(ctx context.Context, req resource.DeleteRe
 
 	err := storage.ItemDeleteRequest{Client: r.client, Storage: data.Name.ValueString()}.Delete()
 	if err != nil {
-		resp.Diagnostics.AddError("Error deleting storage_btrfs", err.Error())
+		resp.Diagnostics.AddError("Error deleting "+r.typeName(), err.Error())
 		return
 	}
 }
