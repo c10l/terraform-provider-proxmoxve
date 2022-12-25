@@ -46,7 +46,6 @@ resource "proxmoxve_firewall_ipset" "infra_cicd" {
 
 ### Read-Only
 
-- `digest` (String)
 - `id` (String) The ID of this resource.
 
 

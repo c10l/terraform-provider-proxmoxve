@@ -30,7 +30,6 @@ data "proxmoxve_firewall_alias" "alias" {
 
 - `cidr` (String)
 - `comment` (String)
-- `digest` (String)
 - `id` (String) The ID of this resource.
 - `ip_version` (Number)
 

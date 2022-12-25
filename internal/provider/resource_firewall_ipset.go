@@ -32,7 +32,6 @@ type FirewallIPSetResourceModel struct {
 	ID      types.String `tfsdk:"id"`
 	Name    types.String `tfsdk:"name"`
 	Comment types.String `tfsdk:"comment"`
-	Digest  types.String `tfsdk:"digest"`
 }
 
 func (r *FirewallIPSetResource) typeName() string { return "firewall_ipset" }
@@ -52,9 +51,6 @@ func (r *FirewallIPSetResource) Schema(ctx context.Context, req resource.SchemaR
 			},
 			"comment": schema.StringAttribute{
 				Optional: true,
-			},
-			"digest": schema.StringAttribute{
-				Computed: true,
 			},
 		},
 	}
@@ -135,7 +131,6 @@ func (r *FirewallIPSetResource) Read(ctx context.Context, req resource.ReadReque
 
 	data.ID = types.StringValue(ipSet.Name)
 	data.Comment = types.StringValue(ipSet.Comment)
-	data.Digest = types.StringValue(ipSet.Digest)
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
 }
 
@@ -148,13 +143,11 @@ func (r *FirewallIPSetResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	digest := state.Digest.ValueString()
 	rename := state.Name.ValueString()
 	comment := config.Comment.ValueString()
 	postReq := ipset.PostRequest{
 		Client:  r.client,
 		Name:    config.Name.ValueString(),
-		Digest:  &digest,
 		Rename:  &rename,
 		Comment: &comment,
 	}
@@ -178,7 +171,6 @@ func (r *FirewallIPSetResource) Update(ctx context.Context, req resource.UpdateR
 	state.ID = types.StringValue(ipSet.Name)
 	state.Name = types.StringValue(ipSet.Name)
 	state.Comment = types.StringValue(ipSet.Comment)
-	state.Digest = types.StringValue(ipSet.Digest)
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
@@ -211,7 +203,6 @@ func (r *FirewallIPSetResource) retrieveIPSetFromList(name string, diags *diag.D
 		if item.Name == name {
 			return &ipset.GetResponse{
 				Name:    name,
-				Digest:  item.Digest,
 				Comment: item.Comment,
 			}
 		}

@@ -26,7 +26,6 @@ description: |-
 
 ### Read-Only
 
-- `digest` (String)
 - `id` (String) The ID of this resource.
 
 

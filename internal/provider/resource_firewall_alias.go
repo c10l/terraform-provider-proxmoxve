@@ -31,7 +31,6 @@ type FirewallAliasResourceModel struct {
 	ID      types.String `tfsdk:"id"`
 	Name    types.String `tfsdk:"name"`
 	CIDR    types.String `tfsdk:"cidr"`
-	Digest  types.String `tfsdk:"digest"`
 	Comment types.String `tfsdk:"comment"`
 }
 
@@ -50,9 +49,6 @@ func (r *FirewallAliasResource) Schema(ctx context.Context, req resource.SchemaR
 			},
 			"cidr": schema.StringAttribute{
 				Required: true,
-			},
-			"digest": schema.StringAttribute{
-				Computed: true,
 			},
 			"comment": schema.StringAttribute{
 				Optional: true,
@@ -128,8 +124,6 @@ func (r *FirewallAliasResource) Read(ctx context.Context, req resource.ReadReque
 		resp.Diagnostics.AddError(fmt.Sprintf("Error reading firewall_alias.%s", data.Name.ValueString()), err.Error())
 		return
 	}
-
-	// TODO: Read data from the global /firewall/aliases endpoint to get digest
 
 	r.convertAPIGetResponseToTerraform(ctx, *alias, data)
 
