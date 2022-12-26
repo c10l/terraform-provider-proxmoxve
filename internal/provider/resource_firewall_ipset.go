@@ -112,12 +112,6 @@ func (r *FirewallIPSetResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	_, err := ipset.ItemGetRequest{Client: r.client, Name: data.Name.ValueString()}.Get()
-	if err != nil {
-		resp.Diagnostics.AddError(fmt.Sprintf("Error reading %s %s", r.typeName(), data.Name.ValueString()), err.Error())
-		return
-	}
-
 	ipSet := r.findIPSetOnList(data.Name.ValueString(), &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -155,12 +149,6 @@ func (r *FirewallIPSetResource) Update(ctx context.Context, req resource.UpdateR
 		Comment: comment,
 	}
 	err := putReq.Post()
-	if err != nil {
-		resp.Diagnostics.AddError("Error updating "+r.typeName(), err.Error())
-		return
-	}
-
-	_, err = ipset.ItemGetRequest{Client: r.client, Name: config.Name.ValueString()}.Get()
 	if err != nil {
 		resp.Diagnostics.AddError("Error updating "+r.typeName(), err.Error())
 		return
@@ -215,5 +203,4 @@ func (r *FirewallIPSetResource) findIPSetOnList(name string, diags *diag.Diagnos
 		return nil
 	}
 	return ipSet
-
 }
