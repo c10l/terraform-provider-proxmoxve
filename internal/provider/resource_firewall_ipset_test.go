@@ -55,5 +55,9 @@ func testAccFirewallIPSetResourceConfig(name, comment string) string {
 			name    = "%s"
 			comment = "%s"
 		}
+
+		resource "proxmoxve_firewall_ipset" "test_no_comment" {
+			name    = "no_comment"
+		}
 	`, name, comment)
 }

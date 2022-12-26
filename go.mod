@@ -5,7 +5,7 @@ go 1.19
 // replace github.com/c10l/proxmoxve-client-go => ../proxmoxve-client-go
 
 require (
-	github.com/c10l/proxmoxve-client-go v0.0.0-20221225212400-de311a731c23
+	github.com/c10l/proxmoxve-client-go v0.0.0-20221226001506-b0fc39d1d49f
 	github.com/hashicorp/terraform-plugin-docs v0.13.0
 	github.com/hashicorp/terraform-plugin-framework v1.0.1
 	github.com/hashicorp/terraform-plugin-go v0.14.2

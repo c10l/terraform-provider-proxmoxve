@@ -130,7 +130,11 @@ func (r *FirewallIPSetResource) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	data.ID = types.StringValue(ipSet.Name)
-	data.Comment = types.StringValue(ipSet.Comment)
+	if ipSet.Comment != "" {
+		data.Comment = types.StringValue(ipSet.Comment)
+	} else {
+		data.Comment = types.StringNull()
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
 }
 
@@ -144,12 +148,17 @@ func (r *FirewallIPSetResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	rename := state.Name.ValueString()
-	comment := config.Comment.ValueString()
+	var comment *string
+	if config.Comment.IsNull() {
+		comment = nil
+	} else {
+		comment = helpers.PtrTo(config.Comment.ValueString())
+	}
 	postReq := ipset.PostRequest{
 		Client:  r.client,
 		Name:    config.Name.ValueString(),
 		Rename:  &rename,
-		Comment: &comment,
+		Comment: comment,
 	}
 	err := postReq.Post()
 	if err != nil {
