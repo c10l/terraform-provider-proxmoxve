@@ -157,12 +157,11 @@ func (r *FirewallIPSetCIDRResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	noMatch := pvetypes.PVEBool(config.NoMatch.ValueBool())
 	itemPutReq := ipset_cidr.ItemPutRequest{
 		Client:    r.client,
 		IPSetName: config.IPSetName.ValueString(),
 		CIDR:      config.CIDR.ValueString(),
-		NoMatch:   &noMatch,
+		NoMatch:   helpers.PtrTo(pvetypes.PVEBool(config.NoMatch.ValueBool())),
 	}
 	if config.Comment.IsNull() {
 		itemPutReq.Comment = nil
@@ -180,7 +179,7 @@ func (r *FirewallIPSetCIDRResource) Update(ctx context.Context, req resource.Upd
 	} else {
 		resp.State.SetAttribute(ctx, path.Root("comment"), config.Comment)
 	}
-	state.NoMatch = types.BoolValue(bool(noMatch))
+	state.NoMatch = types.BoolValue(config.NoMatch.ValueBool())
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
