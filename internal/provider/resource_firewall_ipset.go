@@ -92,9 +92,7 @@ func (r *FirewallIPSetResource) Create(ctx context.Context, req resource.CreateR
 	}
 
 	postReq := ipset.PostRequest{Client: r.client, Name: data.Name.ValueString()}
-	if !data.Comment.IsNull() {
-		postReq.Comment = helpers.PtrTo(data.Comment.ValueString())
-	}
+	postReq.Comment = helpers.PtrTo(data.Comment.ValueString())
 	err := postReq.Post()
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating "+r.typeName(), err.Error())
@@ -135,18 +133,11 @@ func (r *FirewallIPSetResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	rename := state.Name.ValueString()
-	var comment *string
-	if config.Comment.IsNull() {
-		comment = nil
-	} else {
-		comment = helpers.PtrTo(config.Comment.ValueString())
-	}
 	putReq := ipset.PostRequest{
 		Client:  r.client,
 		Name:    config.Name.ValueString(),
-		Rename:  &rename,
-		Comment: comment,
+		Rename:  helpers.PtrTo(state.Name.ValueString()),
+		Comment: helpers.PtrTo(config.Comment.ValueString()),
 	}
 	err := putReq.Post()
 	if err != nil {
@@ -161,11 +152,7 @@ func (r *FirewallIPSetResource) Update(ctx context.Context, req resource.UpdateR
 
 	state.ID = types.StringValue(ipSet.Name)
 	state.Name = types.StringValue(ipSet.Name)
-	if ipSet.Comment != nil {
-		state.Comment = types.StringValue(*ipSet.Comment)
-	} else {
-		state.Comment = types.StringNull()
-	}
+	state.Comment = types.StringValue(*ipSet.Comment)
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
