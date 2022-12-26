@@ -13,3 +13,14 @@ resource "proxmoxve_acme_account" "test" {
   directory = "https://127.0.0.1:14000/dir"
   tos_url   = "foobar"
 }
+
+resource "proxmoxve_firewall_ipset" "management" {
+  name    = "management"
+  comment = "this is an optional comment"
+}
+
+resource "proxmoxve_firewall_ipset_cidr" "infra_workstations" {
+  ipset_name = proxmoxve_firewall_ipset.management.name
+  cidr       = "192.168.10.0/24"
+  comment    = "this is the CIDR of the admin workstations network"
+}

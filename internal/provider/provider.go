@@ -190,6 +190,7 @@ func (p *ProxmoxVEProvider) Resources(ctx context.Context) []func() resource.Res
 		NewACMEPluginResource,
 		NewFirewallAliasResource,
 		NewFirewallIPSetResource,
+		NewFirewallIPSetCIDRResource,
 	}
 }
 

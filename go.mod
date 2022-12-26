@@ -5,12 +5,13 @@ go 1.19
 // replace github.com/c10l/proxmoxve-client-go => ../proxmoxve-client-go
 
 require (
-	github.com/c10l/proxmoxve-client-go v0.0.0-20221226001506-b0fc39d1d49f
+	github.com/c10l/proxmoxve-client-go v0.0.0-20221226015439-53c7016c3ed6
 	github.com/hashicorp/terraform-plugin-docs v0.13.0
 	github.com/hashicorp/terraform-plugin-framework v1.0.1
 	github.com/hashicorp/terraform-plugin-go v0.14.2
 	github.com/hashicorp/terraform-plugin-log v0.7.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.24.1
+	github.com/stretchr/testify v1.7.2
 )
 
 require (
@@ -55,6 +56,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/oklog/run v1.1.0 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/posener/complete v1.2.3 // indirect
 	github.com/pquerna/otp v1.4.0 // indirect
 	github.com/russross/blackfriday v1.6.0 // indirect
@@ -72,4 +74,5 @@ require (
 	google.golang.org/genproto v0.0.0-20221207170731-23e4bf6bdc37 // indirect
 	google.golang.org/grpc v1.51.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

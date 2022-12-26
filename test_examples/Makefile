@@ -8,7 +8,10 @@ clean:
 	rm -f terraform.tfplan
 	rm -f terraform.tfstate*
 
-init:
+install:
+	(cd ..; make install)
+
+init: install
 	rm -f .terraform.lock.hcl
 	terraform init
 
