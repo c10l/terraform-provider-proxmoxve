@@ -140,7 +140,11 @@ func (r *FirewallIPSetCIDRResource) Read(ctx context.Context, req resource.ReadR
 	}
 
 	data.CIDR = types.StringValue(ipSetCIDR.CIDR)
-	data.Comment = types.StringValue(*ipSetCIDR.Comment)
+	if ipSetCIDR.Comment != nil {
+		data.Comment = types.StringValue(*ipSetCIDR.Comment)
+	} else {
+		data.Comment = types.StringNull()
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
 }
 
@@ -153,14 +157,17 @@ func (r *FirewallIPSetCIDRResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	comment := config.Comment.ValueString()
 	noMatch := pvetypes.PVEBool(config.NoMatch.ValueBool())
 	itemPutReq := ipset_cidr.ItemPutRequest{
 		Client:    r.client,
 		IPSetName: config.IPSetName.ValueString(),
 		CIDR:      config.CIDR.ValueString(),
-		Comment:   &comment,
 		NoMatch:   &noMatch,
+	}
+	if config.Comment.IsNull() {
+		itemPutReq.Comment = nil
+	} else {
+		itemPutReq.Comment = helpers.PtrTo(config.Comment.ValueString())
 	}
 	err := itemPutReq.Put()
 	if err != nil {
@@ -168,7 +175,11 @@ func (r *FirewallIPSetCIDRResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	state.Comment = types.StringValue(comment)
+	if config.Comment.IsNull() {
+		resp.State.SetAttribute(ctx, path.Root("comment"), types.StringNull())
+	} else {
+		resp.State.SetAttribute(ctx, path.Root("comment"), config.Comment)
+	}
 	state.NoMatch = types.BoolValue(bool(noMatch))
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

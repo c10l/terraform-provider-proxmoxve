@@ -101,12 +101,6 @@ func (r *FirewallIPSetResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	_, err = ipset.ItemGetRequest{Client: r.client, Name: data.Name.ValueString()}.Get()
-	if err != nil {
-		resp.Diagnostics.AddError("Error retrieving "+r.typeName(), err.Error())
-		return
-	}
-
 	data.ID = data.Name
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
 }
@@ -124,14 +118,14 @@ func (r *FirewallIPSetResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	ipSet := r.retrieveIPSetFromList(data.Name.ValueString(), &resp.Diagnostics)
+	ipSet := r.findIPSetOnList(data.Name.ValueString(), &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	data.ID = types.StringValue(ipSet.Name)
-	if ipSet.Comment != "" {
-		data.Comment = types.StringValue(ipSet.Comment)
+	if ipSet.Comment != nil {
+		data.Comment = types.StringValue(*ipSet.Comment)
 	} else {
 		data.Comment = types.StringNull()
 	}
@@ -154,13 +148,13 @@ func (r *FirewallIPSetResource) Update(ctx context.Context, req resource.UpdateR
 	} else {
 		comment = helpers.PtrTo(config.Comment.ValueString())
 	}
-	postReq := ipset.PostRequest{
+	putReq := ipset.PostRequest{
 		Client:  r.client,
 		Name:    config.Name.ValueString(),
 		Rename:  &rename,
 		Comment: comment,
 	}
-	err := postReq.Post()
+	err := putReq.Post()
 	if err != nil {
 		resp.Diagnostics.AddError("Error updating "+r.typeName(), err.Error())
 		return
@@ -172,14 +166,18 @@ func (r *FirewallIPSetResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	ipSet := r.retrieveIPSetFromList(config.Name.ValueString(), &resp.Diagnostics)
+	ipSet := r.findIPSetOnList(config.Name.ValueString(), &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	state.ID = types.StringValue(ipSet.Name)
 	state.Name = types.StringValue(ipSet.Name)
-	state.Comment = types.StringValue(ipSet.Comment)
+	if ipSet.Comment != nil {
+		state.Comment = types.StringValue(*ipSet.Comment)
+	} else {
+		state.Comment = types.StringNull()
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
@@ -201,26 +199,21 @@ func (r *FirewallIPSetResource) ImportState(ctx context.Context, req resource.Im
 	resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
 }
 
-func (r *FirewallIPSetResource) retrieveIPSetFromList(name string, diags *diag.Diagnostics) *ipset.GetResponse {
+func (r *FirewallIPSetResource) findIPSetOnList(name string, diags *diag.Diagnostics) *ipset.GetResponse {
 	ipSetList, err := ipset.GetRequest{Client: r.client}.Get()
 	if err != nil {
 		diags.AddError("Error getting IPSet list", err.Error())
 		return nil
 	}
 
-	for _, item := range ipSetList {
-		if item.Name == name {
-			return &ipset.GetResponse{
-				Name:    name,
-				Comment: item.Comment,
-			}
-		}
+	ipSet := ipSetList.FindByName(name)
+	if ipSet == nil {
+		diags.AddError(
+			fmt.Sprintf("IPSet %s not found on list", name),
+			fmt.Sprintf("IPSets returned from the server:\n%+v", ipSetList),
+		)
+		return nil
 	}
+	return ipSet
 
-	// If item not found, add error and return nil
-	diags.AddError(
-		fmt.Sprintf("IPSet %s not found on list", name),
-		fmt.Sprintf("IPSets returned from the server:\n%+v", ipSetList),
-	)
-	return nil
 }

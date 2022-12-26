@@ -15,12 +15,20 @@ func TestAccDataSourceFirewallRefs(t *testing.T) {
 			{
 				Config: testAccDataSourceFirewallRefsConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckTypeSetElemAttr("data.proxmoxve_firewall_refs.test", "refs.*", "0"),
 					resource.TestCheckNoResourceAttr("data.proxmoxve_firewall_refs.test", "type"),
+					resource.TestCheckTypeSetElemNestedAttrs("data.proxmoxve_firewall_refs.test", "refs.*", map[string]string{"name": "proxmoxve_firewall_refs_test"}),
 				),
 			},
 		},
 	})
 }
 
-const testAccDataSourceFirewallRefsConfig = `data proxmoxve_firewall_refs test {}`
+const testAccDataSourceFirewallRefsConfig = `
+		resource "proxmoxve_firewall_ipset" "test" {
+			name = "proxmoxve_firewall_refs_test"
+		}
+
+		data "proxmoxve_firewall_refs" "test" {
+			depends_on = [proxmoxve_firewall_ipset.test]
+		}
+`
