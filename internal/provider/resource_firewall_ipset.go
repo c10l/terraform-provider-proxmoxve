@@ -152,7 +152,11 @@ func (r *FirewallIPSetResource) Update(ctx context.Context, req resource.UpdateR
 
 	state.ID = types.StringValue(ipSet.Name)
 	state.Name = types.StringValue(ipSet.Name)
-	state.Comment = types.StringValue(*ipSet.Comment)
+	if ipSet.Comment != nil {
+		state.Comment = types.StringValue(*ipSet.Comment)
+	} else {
+		state.Comment = types.StringNull()
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 

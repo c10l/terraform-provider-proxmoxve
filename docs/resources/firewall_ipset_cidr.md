@@ -34,11 +34,11 @@ resource "proxmoxve_firewall_ipset_cidr" "negated" {
 
 - `cidr` (String) CIDR to be configured. e.g. `10.0.0.0/8`, `fd65::/16`.
 - `ipset_name` (String) Name of the IPSet on which to attach this CIDR.
+- `no_match` (Boolean) Set to `true` to negate the CIDR rather than match it.
 
 ### Optional
 
 - `comment` (String)
-- `no_match` (Boolean) Set to `true` to negate the CIDR rather than matching it.
 
 ### Read-Only
 
