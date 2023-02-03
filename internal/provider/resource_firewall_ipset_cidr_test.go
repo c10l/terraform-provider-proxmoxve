@@ -27,7 +27,6 @@ func TestFirewallIPSetCIDRResource(t *testing.T) {
 					resource.TestCheckResourceAttr("proxmoxve_firewall_ipset_cidr.ten_network", "ipset_name", "proxmoxve_firewall_ipset_test"),
 					resource.TestCheckResourceAttr("proxmoxve_firewall_ipset_cidr.ten_network", "cidr", "10.0.0.0/8"),
 					resource.TestCheckResourceAttr("proxmoxve_firewall_ipset_cidr.ten_network", "comment", "open sesame"),
-					// resource.TestCheckNoResourceAttr("proxmoxve_firewall_ipset_cidr.ten_network", "no_match"),
 					resource.TestCheckResourceAttr("proxmoxve_firewall_ipset_cidr.ten_network", "no_match", "false"),
 					resource.TestCheckResourceAttr("proxmoxve_firewall_ipset_cidr.ipv6_ula", "ipset_name", "proxmoxve_firewall_ipset_test"),
 					resource.TestCheckResourceAttr("proxmoxve_firewall_ipset_cidr.ipv6_ula", "cidr", "fd65::/16"),
