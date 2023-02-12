@@ -143,10 +143,8 @@ func (r *ACMEPluginResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	r.eventuallyGet(ctx, data, 5*time.Second)
-
+	data.ID = data.Name
 	tflog.Trace(ctx, "created acme_plugin")
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
 }
 
@@ -208,20 +206,7 @@ func (r *ACMEPluginResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	state := ACMEPluginResourceModel{}
-	plugin, err := r.eventuallyGet(ctx, &state, 5*time.Second)
-	if err != nil {
-		if strings.Contains(err.Error(), fmt.Sprintf("ACME plugin '%s' does not exist", state.ID.ValueString())) {
-			resp.State.RemoveResource(ctx)
-			return
-		} else {
-			resp.Diagnostics.AddError(fmt.Sprintf("error reading acme_plugin.%s", state.Name.ValueString()), err.Error())
-			return
-		}
-	}
-
-	resp.Diagnostics.Append(r.convertAPIGetResponseToTerraform(ctx, *plugin, &state)...)
-	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
 }
 
 func (r *ACMEPluginResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
