@@ -47,7 +47,8 @@ func (r *FirewallGroupResource) Schema(ctx context.Context, req resource.SchemaR
 				Computed: true,
 			},
 			"name": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				MarkdownDescription: "Name of the firewall security group.",
 			},
 			"comment": schema.StringAttribute{
 				Optional: true,
