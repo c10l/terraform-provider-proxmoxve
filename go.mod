@@ -2,7 +2,7 @@ module terraform-provider-proxmoxve
 
 go 1.20
 
-replace github.com/c10l/proxmoxve-client-go => ../proxmoxve-client-go
+// replace github.com/c10l/proxmoxve-client-go => ../proxmoxve-client-go
 
 require (
 	github.com/c10l/proxmoxve-client-go v0.0.0-20230212172925-5dea1c8a30bb
