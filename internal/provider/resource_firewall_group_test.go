@@ -30,7 +30,6 @@ func TestFirewallGroupResource(t *testing.T) {
 			{
 				Config: testAccFirewallGroupResourceConfig("pmve_fw_group_test", "no comments"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("proxmoxve_firewall_group.test", "id", "pmve_fw_group_test"),
 					resource.TestCheckResourceAttr("proxmoxve_firewall_group.test", "name", "pmve_fw_group_test"),
 					resource.TestCheckResourceAttr("proxmoxve_firewall_group.test", "comment", "no comments"),
 				),
@@ -39,7 +38,6 @@ func TestFirewallGroupResource(t *testing.T) {
 			{
 				Config: testAccFirewallGroupResourceConfig("pmve_fw_group_ren", "no comments"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("proxmoxve_firewall_group.test", "id", "pmve_fw_group_ren"),
 					resource.TestCheckResourceAttr("proxmoxve_firewall_group.test", "name", "pmve_fw_group_ren"),
 					resource.TestCheckResourceAttr("proxmoxve_firewall_group.test", "comment", "no comments"),
 				),

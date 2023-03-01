@@ -11,6 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -44,7 +46,8 @@ func (r *FirewallGroupResource) Schema(ctx context.Context, req resource.SchemaR
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
+				Computed:      true,
+				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"name": schema.StringAttribute{
 				Required:            true,
@@ -116,10 +119,10 @@ func (r *FirewallGroupResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	data.ID = types.StringValue(group.Group)
 	data.Name = types.StringValue(group.Group)
-	if group.Comment != nil {
-		data.Comment = types.StringValue(*group.Comment)
+	data.ID = data.Name
+	if group.Comment != "" {
+		data.Comment = types.StringValue(group.Comment)
 	} else {
 		data.Comment = types.StringNull()
 	}
@@ -135,19 +138,18 @@ func (r *FirewallGroupResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	putReq := groups.PostRequest{
+	err := groups.PostRequest{
 		Client:  r.client,
 		Group:   config.Name.ValueString(),
 		Rename:  helpers.PtrTo(state.Name.ValueString()),
 		Comment: helpers.PtrTo(config.Comment.ValueString()),
-	}
-	err := putReq.Post()
+	}.Post()
 	if err != nil {
 		resp.Diagnostics.AddError("Error updating "+r.typeName(), err.Error())
 		return
 	}
 
-	config.ID = config.Name
+	config.ID = state.ID
 	resp.Diagnostics.Append(resp.State.Set(ctx, config)...)
 }
 
